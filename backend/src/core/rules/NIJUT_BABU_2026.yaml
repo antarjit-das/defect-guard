@@ -1,0 +1,166 @@
+version: 1.0
+
+scheme:
+  id: NIJUT_BABU_2026
+  name: Mukhya Mantrir Nijut Babu Aasoni (AY 2026-27)
+  shortName: Nijut Babu
+  jurisdiction: Assam
+  academicYear: 2026-27
+  incomeCeiling: 400000
+  mandatoryRoles:
+    - AADHAAR
+    - INCOME_CERTIFICATE
+    - MARKSHEET
+    - BANK_PROOF
+  maxFileBytes: 5242880
+  allowedMimeTypes:
+    - application/pdf
+    - image/jpeg
+    - image/png
+
+rules:
+  - id: R-01
+    title: Student name mismatch across documents
+    severity: RED
+    category: IDENTITY
+    kind: DETERMINISTIC
+    inspects:
+      - student_name
+    needsAdjudication: true
+    source: "MMNBA 2026 Verification Guidelines §3 — Candidate name must be identical across submitted supporting records."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "Your name is spelled differently across submitted documents (e.g. Aadhaar vs Marksheet). Verification officers will flag this discrepancy during scrutiny."
+    defaultFix: "Check your records and ensure the spelling on your Marksheet and application form matches your Aadhaar card."
+
+  - id: R-02
+    title: Father's or guardian's name mismatch
+    severity: RED
+    category: IDENTITY
+    kind: DETERMINISTIC
+    inspects:
+      - father_name
+      - parent_name
+    needsAdjudication: true
+    source: "MMNBA 2026 Guidelines §3(b) — Parent/guardian particulars must match across academic and economic certificates."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "Your father's or parent's name appears differently across your submitted documents."
+    defaultFix: "Verify the correct spelling of your parent's name and ensure consistent particulars across your Marksheet and Income Certificate."
+
+  - id: R-03
+    title: Bank account holder name mismatch
+    severity: RED
+    category: BANK
+    kind: DETERMINISTIC
+    inspects:
+      - account_holder_name
+      - student_name
+    needsAdjudication: true
+    source: "MMNBA 2026 Direct Benefit Transfer (DBT) Mandate — Bank account must be seeded with Aadhaar and belong to the student."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "The bank account holder name does not match the student's name. Scholarship funds can only be disbursed to the student's own account."
+    defaultFix: "Upload a bank passbook or statement for an active bank account in the student's own name."
+
+  - id: R-04
+    title: Institution enrollment requires verification
+    severity: AMBER
+    category: ELIGIBILITY
+    kind: DETERMINISTIC
+    inspects:
+      - institution_name
+    needsAdjudication: false
+    source: "MMNBA 2026 Executive Order Clause 1 — Eligible students must be admitted in Govt or Provincialised institutions under Fee Waiver Scheme."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "Your institution requires confirmation of provincialised status and enrollment under the Govt of Assam Fee Waiver Scheme."
+    defaultFix: "Verify with your college nodal officer that your admission is enrolled under the Assam Govt Fee Waiver Scheme before portal submission."
+
+  - id: R-05
+    title: Missing mandatory supporting document
+    severity: RED
+    category: COMPLETENESS
+    kind: DETERMINISTIC
+    inspects:
+      - documents
+    needsAdjudication: false
+    source: "MMNBA 2026 Mandatory Checklist — All 4 supporting documents (Aadhaar, Income Certificate, Marksheet, Bank Proof) are required."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "One or more mandatory supporting documents have not been uploaded."
+    defaultFix: "Upload all 4 mandatory documents: Aadhaar card, Income Certificate, Marksheet, and Bank Proof."
+
+  - id: R-06
+    title: Gender is not Male
+    severity: RED
+    category: ELIGIBILITY
+    kind: DETERMINISTIC
+    inspects:
+      - gender
+    needsAdjudication: false
+    source: "MMNBA 2026 Executive Order Clause 2 — Scheme is applicable exclusively to male students enrolled in UG/PG."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "Aadhaar records indicate a gender other than Male. MMNBA 2026 is specifically formulated for male students."
+    defaultFix: "If this is an Aadhaar recording error, update your Aadhaar card at an official enrollment center. Female students should apply under Nijut Moina Aasoni."
+
+  - id: R-07
+    title: Declared annual income exceeds scheme ceiling
+    severity: RED
+    category: ELIGIBILITY
+    kind: DETERMINISTIC
+    inspects:
+      - annual_income
+    needsAdjudication: false
+    source: "MMNBA 2026 Executive Order Clause 4(b) — Annual family income must be strictly below ₹4.00 lakh."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "Your income certificate declares an annual income exceeding the scheme ceiling of ₹4,00,000."
+    defaultFix: "Upload an income certificate from the competent Revenue Circle Officer confirming annual family income below ₹4,00,000."
+
+  - id: R-08
+    title: Income certificate issuing authority requires verification
+    severity: AMBER
+    category: ELIGIBILITY
+    kind: DETERMINISTIC
+    inspects:
+      - income_cert_authority
+    needsAdjudication: false
+    source: "MMNBA 2026 Executive Order Clause 4(b) — Income certificate must be issued by a competent Revenue Circle Officer."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "The issuing authority on your income certificate should be verified as a competent Revenue Circle Officer or designated state authority."
+    defaultFix: "Ensure your income certificate is issued or counter-signed by the Circle Officer of your revenue circle."
+
+  - id: R-09
+    title: Document readability or image quality is poor
+    severity: AMBER
+    category: QUALITY
+    kind: DETERMINISTIC
+    inspects:
+      - documentQuality
+    needsAdjudication: false
+    source: "MMNBA Application Upload Instructions — Uploaded documents must be clearly legible for scrutiny."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "One or more uploaded document scans are blurry, low resolution, or difficult to read."
+    defaultFix: "Re-scan the document in good lighting with high resolution (under 5 MB) and re-upload."
+
+  - id: R-10
+    title: Uploaded document does not match its slot
+    severity: AMBER
+    category: DOCUMENT_FORMAT
+    kind: DETERMINISTIC
+    inspects:
+      - roleConfirmed
+    needsAdjudication: false
+    source: "MMNBA Portal Upload Requirements — The uploaded file must match the selected document slot."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "The uploaded file content appears to differ from the designated slot (e.g. uploading a Marksheet in the Aadhaar slot)."
+    defaultFix: "Check your file selection and upload the correct document to its designated slot."
+
+  - id: R-11
+    title: Unsupported file format or file exceeds size limit
+    severity: AMBER
+    category: DOCUMENT_FORMAT
+    kind: DETERMINISTIC
+    inspects:
+      - contentType
+      - sizeBytes
+    needsAdjudication: false
+    source: "MMNBA Technical Guidelines — Only PDF, JPEG, and PNG files up to 5 MB are accepted."
+    sourceUrl: "https://directorateofhighereducation.assam.gov.in"
+    defaultReason: "One of your files exceeds the size limit or is in an unsupported format."
+    defaultFix: "Convert your file to PDF, JPEG, or PNG and ensure the size is under 5 MB (recommended under 200 KB)."
