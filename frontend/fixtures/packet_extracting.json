@@ -1,0 +1,68 @@
+{
+  "packetId": "pkt-demo-2026-0918",
+  "schemeId": "NIJUT_BABU_2026",
+  "status": "EXTRACTING",
+  "createdAt": "2026-09-18T10:00:00Z",
+  "updatedAt": "2026-09-18T10:00:30Z",
+  "documents": [
+    {
+      "documentId": "doc-aadhaar-1",
+      "role": "AADHAAR",
+      "fileName": "aadhaar_card.jpg",
+      "contentType": "image/jpeg",
+      "sizeBytes": 152340,
+      "pageCount": 1,
+      "status": "EXTRACTING",
+      "objectKey": "packets/pkt-demo-2026-0918/doc-aadhaar-1.jpg",
+      "supersededBy": null,
+      "extraction": null,
+      "error": null,
+      "expiresAt": 1789790535
+    },
+    {
+      "documentId": "doc-income-1",
+      "role": "INCOME_CERTIFICATE",
+      "fileName": "income_certificate.pdf",
+      "contentType": "application/pdf",
+      "sizeBytes": 184320,
+      "pageCount": 1,
+      "status": "EXTRACTING",
+      "objectKey": "packets/pkt-demo-2026-0918/doc-income-1.pdf",
+      "supersededBy": null,
+      "extraction": null,
+      "error": null,
+      "expiresAt": 1789790535
+    },
+    {
+      "documentId": "doc-marksheet-1",
+      "role": "MARKSHEET",
+      "fileName": "marksheet_hs.pdf",
+      "contentType": "application/pdf",
+      "sizeBytes": 224150,
+      "pageCount": 1,
+      "status": "UPLOADED",
+      "objectKey": "packets/pkt-demo-2026-0918/doc-marksheet-1.pdf",
+      "supersededBy": null,
+      "extraction": null,
+      "error": null,
+      "expiresAt": 1789790535
+    },
+    {
+      "documentId": "doc-bank-1",
+      "role": "BANK_PROOF",
+      "fileName": "passbook_front.jpg",
+      "contentType": "image/jpeg",
+      "sizeBytes": 165800,
+      "pageCount": 1,
+      "status": "UPLOADED",
+      "objectKey": "packets/pkt-demo-2026-0918/doc-bank-1.jpg",
+      "supersededBy": null,
+      "extraction": null,
+      "error": null,
+      "expiresAt": 1789790535
+    }
+  ],
+  "verdict": null,
+  "previousScore": null,
+  "expiresAt": 1789790535
+}
