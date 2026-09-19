@@ -192,6 +192,8 @@
     let activePacketId = null;
     let uploadedDocsCount = 0;
     let pollInterval = null;
+    let readinessPollInterval = null;
+    const REQUIRED_DOCUMENT_ROLES = ['AADHAAR', 'INCOME_CERTIFICATE', 'MARKSHEET', 'BANK_PROOF'];
 
     function log(msg) {
       const el = document.getElementById('log-box');
@@ -288,11 +290,7 @@
         dz.className = 'dropzone uploaded';
         fileInfo.textContent = `✅ ${file.name} (Uploaded & Processing)`;
         uploadedDocsCount++;
-
-        if (uploadedDocsCount >= 3) {
-          document.getElementById('btn-run-check').disabled = false;
-          document.getElementById('btn-run-check').className = '';
-        }
+        waitForDocumentsToExtract();
 
       } catch (err) {
         log(`Direct AWS upload encountered: ${err.message}. Simulating upload state.`);
@@ -304,6 +302,48 @@
           document.getElementById('btn-run-check').className = '';
         }
       }
+    }
+
+    async function refreshDocumentReadiness() {
+      if (!activePacketId) return false;
+      const api = getApiBase();
+      const res = await fetch(`${api}/packets/${activePacketId}`);
+      if (!res.ok) throw new Error(`Could not check document status: HTTP ${res.status}`);
+
+      const packet = await res.json();
+      const extractedRoles = new Set((packet.documents || [])
+        .filter(doc => !doc.supersededBy && doc.status === 'EXTRACTED')
+        .map(doc => doc.role));
+      const pendingRoles = REQUIRED_DOCUMENT_ROLES.filter(role => !extractedRoles.has(role));
+      const button = document.getElementById('btn-run-check');
+
+      if (pendingRoles.length === 0) {
+        button.disabled = false;
+        button.className = '';
+        log('All mandatory documents are extracted. You can now run the defect check.');
+        return true;
+      }
+
+      button.disabled = true;
+      button.className = 'secondary';
+      return false;
+    }
+
+    function waitForDocumentsToExtract() {
+      if (readinessPollInterval) return;
+      log('Waiting for all mandatory documents to finish extraction before enabling Run Check...');
+      const checkReadiness = async () => {
+        try {
+          if (await refreshDocumentReadiness()) {
+            clearInterval(readinessPollInterval);
+            readinessPollInterval = null;
+          }
+        } catch (err) {
+          log(`Could not refresh document extraction status: ${err.message}`);
+        }
+      };
+      checkReadiness();
+      readinessPollInterval = setInterval(checkReadiness, 2000);
     }
 
     // --- 3. POST /packets/{id}/check & Poll GET /packets/{id} ---
@@ -329,6 +369,8 @@
 
     function startPolling() {
       if (pollInterval) clearInterval(pollInterval);
+      if (readinessPollInterval) clearInterval(readinessPollInterval);
+      readinessPollInterval = null;
       const api = getApiBase();
       let pollCount = 0;
 
@@ -439,6 +481,8 @@
       activePacketId = null;
       uploadedDocsCount = 0;
       if (pollInterval) clearInterval(pollInterval);
+      if (readinessPollInterval) clearInterval(readinessPollInterval);
+      readinessPollInterval = null;
       document.getElementById('score-display').textContent = '--';
       document.getElementById('score-display').style.color = '#64748b';
       document.getElementById('score-band').textContent = 'WAITING FOR DOCUMENTS';

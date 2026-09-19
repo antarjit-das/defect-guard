@@ -114,9 +114,13 @@ class RuleEngine:
             "mandatoryRoles",
             [ROLE_AADHAAR, ROLE_INCOME_CERTIFICATE, ROLE_MARKSHEET, ROLE_BANK_PROOF],
         )
-        # Collect all document types that the student actually uploaded
+        # A document is present after S3 upload has been acknowledged. Extraction
+        # status must not turn an uploaded (or extraction-failed) document into a
+        # false "missing document" penalty.
         uploaded_roles = set()
-        for doc in active_docs:
+        for doc in documents:
+            if doc.supersededBy is not None or doc.status == DocumentStatus.PENDING_UPLOAD:
+                continue
             role_name = doc.role.value if hasattr(doc.role, "value") else str(doc.role)
             uploaded_roles.add(role_name)
 

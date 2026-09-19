@@ -190,6 +190,17 @@ def test_rule_missing_document():
     assert "BANK_PROOF" in r05.reason
 
 
+def test_rule_processing_document_is_not_missing():
+    """R-05 reflects upload presence, not asynchronous extraction timing."""
+    docs = _create_demo_documents()
+    income_doc = next(doc for doc in docs if doc.role == DocumentRole.INCOME_CERTIFICATE)
+    income_doc.status = DocumentStatus.EXTRACTING
+    income_doc.extraction = None
+
+    findings = RuleEngine().evaluate(build_snapshot(docs), docs)
+    assert "R-05" not in [finding.ruleId for finding in findings]
+
+
 def test_rule_bank_account_holder_mismatch():
     """Verify that a bank account in someone else's name fires R-03."""
     docs = _create_demo_documents()

@@ -6,13 +6,13 @@ Contract:
 - Input: {}
 - Output 202: {"checkRunId": "...", "status": "CHECKING"}
 - Behaviour:
-    1. Requires >= 3 active documents with status = EXTRACTED.
+    1. Requires all four mandatory roles with status = EXTRACTED.
     2. Prevents re-run if packet status is currently CHECKING (409 ALREADY_RUNNING).
     3. Sets packet status = CHECKING.
     4. Invokes worker Lambda `fn_run_check` asynchronously (Event invocation type).
 - Errors:
     - 404 PACKET_NOT_FOUND
-    - 409 NOT_ENOUGH_DOCUMENTS (needs >= 3 extracted)
+    - 409 DOCUMENTS_NOT_READY (one or more mandatory documents are still processing)
     - 409 ALREADY_RUNNING
 """
 
@@ -30,7 +30,7 @@ from backend.src.handlers.api_util import api_response, api_error
 logger = logging.getLogger(__name__)
 
 RUN_CHECK_WORKER_FUNCTION = os.environ.get("RUN_CHECK_WORKER_FUNCTION", "DefectGuard-RunCheck")
-MIN_REQUIRED_EXTRACTED_DOCS = 3
+REQUIRED_DOCUMENT_ROLES = {"AADHAAR", "INCOME_CERTIFICATE", "MARKSHEET", "BANK_PROOF"}
 
 
 def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
@@ -54,25 +54,29 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
                 "A defect check is currently in progress for this packet.",
             )
 
-        # 2. Count active extracted documents
-        extracted_count = 0
+        # 2. Require every mandatory role to finish extraction before a verdict.
+        # This prevents a transient EXTRACTING replacement from being scored as
+        # missing by the rule engine.
+        extracted_roles = set()
         for doc in packet.documents:
             if doc.supersededBy is None and doc.status == DocumentStatus.EXTRACTED:
-                extracted_count += 1
+                role = doc.role.value if hasattr(doc.role, "value") else str(doc.role)
+                extracted_roles.add(role)
 
-        if extracted_count < MIN_REQUIRED_EXTRACTED_DOCS:
+        missing_roles = sorted(REQUIRED_DOCUMENT_ROLES - extracted_roles)
+        if missing_roles:
             return api_response(
                 409,
                 {
                     "error": {
-                        "code": "NOT_ENOUGH_DOCUMENTS",
+                        "code": "DOCUMENTS_NOT_READY",
                         "message": (
-                            f"At least {MIN_REQUIRED_EXTRACTED_DOCS} extracted documents are required "
-                            f"to run a check (currently {extracted_count} extracted)."
+                            "All mandatory documents must finish extraction before a check can run. "
+                            f"Still processing or missing: {', '.join(missing_roles)}."
                         ),
                     },
-                    "extracted": extracted_count,
-                    "required": MIN_REQUIRED_EXTRACTED_DOCS,
+                    "extractedRoles": sorted(extracted_roles),
+                    "pendingRoles": missing_roles,
                 },
             )
 

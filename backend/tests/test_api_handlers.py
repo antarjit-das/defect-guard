@@ -201,18 +201,18 @@ def test_handler_run_check_not_enough_docs(mock_boto, mock_up_status, mock_get_f
     resp = handle_run_check(event)
     assert resp["statusCode"] == 409
     body = json.loads(resp["body"])
-    assert body["error"]["code"] == "NOT_ENOUGH_DOCUMENTS"
-    assert body["extracted"] == 1
-    assert body["required"] == 3
+    assert body["error"]["code"] == "DOCUMENTS_NOT_READY"
+    assert body["extractedRoles"] == ["AADHAAR"]
+    assert set(body["pendingRoles"]) == {"BANK_PROOF", "INCOME_CERTIFICATE", "MARKSHEET"}
 
 
 @patch("backend.src.handlers.run_check_api.get_full_packet")
 @patch("backend.src.handlers.run_check_api.update_packet_status")
 @patch("backend.src.handlers.run_check_api.boto3.client")
 def test_handler_run_check_success(mock_boto, mock_up_status, mock_get_full):
-    """POST /check returns 202 status=CHECKING when >= 3 docs are extracted."""
+    """POST /check returns 202 when every mandatory role is extracted."""
     docs = []
-    for r in [DocumentRole.AADHAAR, DocumentRole.MARKSHEET, DocumentRole.BANK_PROOF]:
+    for r in [DocumentRole.AADHAAR, DocumentRole.INCOME_CERTIFICATE, DocumentRole.MARKSHEET, DocumentRole.BANK_PROOF]:
         docs.append(
             DocumentItem(
                 documentId=f"doc-{r.value}",
