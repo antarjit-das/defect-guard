@@ -23,7 +23,7 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.config import Config
 
-from backend.src.core.models import (
+from ..core.models import (
     Packet,
     PacketStatus,
     DocumentItem,
@@ -154,6 +154,10 @@ def get_full_packet(
         d_clean = dict(d)
         d_clean.pop("pk", None)
         d_clean.pop("sk", None)
+        # Never fabricate an extraction payload on failed or empty extractions
+        status_in_doc = d_clean.get("status")
+        if status_in_doc == DocumentStatus.EXTRACTION_FAILED.value or status_in_doc == DocumentStatus.EXTRACTION_FAILED or d_clean.get("extraction") == {}:
+            d_clean["extraction"] = None
         parsed_docs.append(DocumentItem.model_validate(d_clean))
 
     packet_payload = {
@@ -259,7 +263,7 @@ def register_document(
 def update_document_extraction(
     packet_id: str,
     document_id: str,
-    extraction_dict: Dict[str, Any],
+    extraction_dict: Optional[Dict[str, Any]] = None,
     status: DocumentStatus = DocumentStatus.EXTRACTED,
     error: Optional[str] = None,
     table_name: Optional[str] = None,
@@ -274,17 +278,22 @@ def update_document_extraction(
 
     status_val = status.value if hasattr(status, "value") else str(status)
 
-    update_expr = "SET #st = :st, extraction = :ex"
     expr_names = {"#st": "status"}
-    expr_values = {
+    expr_values: Dict[str, Any] = {
         ":st": status_val,
-        ":ex": floats_to_decimals(extraction_dict),
     }
+    set_clauses = ["#st = :st"]
+
+    if extraction_dict is not None and len(extraction_dict) > 0 and status != DocumentStatus.EXTRACTION_FAILED:
+        set_clauses.append("extraction = :ex")
+        expr_values[":ex"] = floats_to_decimals(extraction_dict)
 
     if error:
-        update_expr += ", #err = :err"
+        set_clauses.append("#err = :err")
         expr_names["#err"] = "error"
         expr_values[":err"] = error
+
+    update_expr = "SET " + ", ".join(set_clauses)
 
     table.update_item(
         Key={"pk": pk, "sk": sk},

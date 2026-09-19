@@ -102,6 +102,39 @@ class DocumentExtraction(BaseModel):
     fields: List[ExtractedField] = Field(default_factory=list)
     notes: Optional[str] = None
 
+    def is_usable(self) -> bool:
+        """Check whether this extraction contains at least one usable field."""
+        return is_usable_extraction(self)
+
+
+def is_usable_field(field: Optional[ExtractedField]) -> bool:
+    """Check if an extracted field contains usable information.
+
+    A field is usable if it has a valid fieldKey and either a non-empty
+    rawValue or a non-empty normalizedValue.
+    """
+    if not field or not getattr(field, "fieldKey", None):
+        return False
+    if field.rawValue is not None and str(field.rawValue).strip():
+        return True
+    if field.normalizedValue is not None:
+        if isinstance(field.normalizedValue, str) and not field.normalizedValue.strip():
+            return False
+        return True
+    return False
+
+
+def is_usable_extraction(extraction: Optional[DocumentExtraction]) -> bool:
+    """Predicate determining whether a DocumentExtraction is actually usable.
+
+    A document extraction is usable if and only if it is non-null and contains
+    at least one usable extracted field. Empty field lists (fields=[]) or fields
+    with only null/blank values are not considered usable extractions.
+    """
+    if not extraction or not getattr(extraction, "fields", None):
+        return False
+    return any(is_usable_field(f) for f in extraction.fields)
+
 
 class DocumentItem(BaseModel):
     """Represents a document within a packet."""
