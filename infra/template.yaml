@@ -18,8 +18,8 @@ Globals:
         DYNAMODB_TABLE: !Ref DefectGuardTable
         UPLOADS_BUCKET: !Ref DocumentUploadsBucket
         BEDROCK_MODEL_ID: 'global.anthropic.claude-sonnet-4-5-20250929-v1:0'
-        EXTRACT_WORKER_FUNCTION: !GetAtt ExtractDocumentFunction.Arn
-        RUN_CHECK_WORKER_FUNCTION: !GetAtt RunCheckFunction.Arn
+        EXTRACT_WORKER_FUNCTION: !Sub 'DefectGuard-ExtractDocument-${AWS::StackName}'
+        RUN_CHECK_WORKER_FUNCTION: !Sub 'DefectGuard-RunCheck-${AWS::StackName}'
         LOG_LEVEL: INFO
 
 Resources:
