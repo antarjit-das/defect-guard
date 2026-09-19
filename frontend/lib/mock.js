@@ -189,8 +189,23 @@
       } else if (doc.role === types.DocumentRole.BANK_PROOF) {
         doc.extraction = JSON.parse(JSON.stringify(mockData.DEMO_EXTRACTIONS.BANK_PROOF));
       } else if (doc.role === types.DocumentRole.INCOME_CERTIFICATE) {
-        // If filename has 250 or it is a replacement, use compliant extraction
-        const isCompliant = doc.fileName.includes('250') || doc._isReplacement;
+        // Strict deterministic compliance:
+        // Any file with 450, 4.5, defect, exceed is explicitly DEFECTIVE (₹4,50,000 > ₹4,00,000 ceiling).
+        // Any file with 250, 2.5, compliant, valid is explicitly COMPLIANT (₹2,50,000 <= ₹4,00,000 ceiling).
+        // If unspecified, initial upload defaults to defective (450k) to demonstrate defect detection,
+        // while a replacement without 450 defaults to compliant (250k).
+        const lowerName = (doc.fileName || '').toLowerCase();
+        let isCompliant = false;
+        if (lowerName.includes('450') || lowerName.includes('4.5') || lowerName.includes('defect') || lowerName.includes('exceed')) {
+          isCompliant = false;
+        } else if (lowerName.includes('250') || lowerName.includes('2.5') || lowerName.includes('compliant') || lowerName.includes('valid')) {
+          isCompliant = true;
+        } else if (doc._isReplacement) {
+          isCompliant = true;
+        } else {
+          isCompliant = false;
+        }
+
         doc.extraction = JSON.parse(JSON.stringify(
           isCompliant ? mockData.DEMO_EXTRACTIONS.INCOME_COMPLIANT : mockData.DEMO_EXTRACTIONS.INCOME_DEFECTIVE
         ));
@@ -255,11 +270,11 @@
 
       const now = new Date().toISOString();
       const checkRunId = `chk-run-mock-${Date.now()}`;
+      const currentScore = (this.currentPacket.verdict && this.currentPacket.verdict.score) || null;
 
       if (isCompliant) {
         // Rechecked Verdict: Score 65 (R-07 resolved)
-        const previousScore = (this.currentPacket.verdict && this.currentPacket.verdict.score) || 40;
-        this.currentPacket.previousScore = previousScore;
+        this.currentPacket.previousScore = (currentScore !== null && currentScore !== 65) ? currentScore : 40;
         this.currentPacket.verdict = {
           checkRunId: checkRunId,
           snapshot: {
@@ -276,8 +291,8 @@
           expiresAt: Math.floor(Date.now() / 1000) + 86400
         };
       } else {
-        // Initial Verdict: Score 40 (3 defects: R-01, R-07, R-04)
-        this.currentPacket.previousScore = null;
+        // Initial / Defective Verdict: Score 40 (3 defects: R-01, R-07, R-04)
+        this.currentPacket.previousScore = (currentScore !== null && currentScore !== 40) ? currentScore : null;
         this.currentPacket.verdict = {
           checkRunId: checkRunId,
           snapshot: {

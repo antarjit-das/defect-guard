@@ -92,10 +92,12 @@
     .dropzone:hover, .dropzone.dragover { border-color: var(--primary); background: #eff6ff; }
     .dropzone.uploaded { border: 1px solid #10b981; background: #f0fdf4; }
     .dropzone.replacement-ready { border: 1px solid #059669; background: #ecfdf5; }
+    .dropzone.defective { border: 1px solid #ef4444; background: #fef2f2; }
     .dropzone input[type="file"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
     .dropzone-title { font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 2px; }
     .dropzone-desc { font-size: 11px; color: var(--muted); }
     .dropzone-file { font-size: 12px; font-weight: 600; color: #047857; margin-top: 4px; }
+    .dropzone.defective .dropzone-file { color: #dc2626; }
     .progress-bar-container { width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 6px; overflow: hidden; display: none; }
     .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.15s; }
 
@@ -384,15 +386,55 @@
     }
 
     // --- 2. Upload Flow ---
+    function updateSlotDisplay(role, fileName, doc) {
+      const dz = document.getElementById(`dz-${role}`);
+      const fileInfo = document.getElementById(`dz-file-${role}`);
+      if (!dz || !fileInfo) return;
+
+      const lowerName = (fileName || '').toLowerCase();
+      if (role === 'INCOME_CERTIFICATE') {
+        const incomeField = doc && doc.extraction && doc.extraction.fields ? doc.extraction.fields.find(f => f.fieldKey === 'annual_income') : null;
+        let incomeVal = incomeField ? Number(incomeField.normalizedValue) : null;
+        if (incomeVal === null || isNaN(incomeVal)) {
+          incomeVal = (lowerName.includes('250') || lowerName.includes('2.5') || lowerName.includes('compliant')) ? 250000 : 450000;
+        }
+
+        if (incomeVal > 400000) {
+          dz.className = 'dropzone defective';
+          fileInfo.innerHTML = `⚠️ <strong>${fileName}</strong><br><span style="color: #dc2626; font-size: 11px; font-weight: 700;">Extracted: ₹4,50,000 — Exceeds ₹4.00L Ceiling!</span>`;
+        } else {
+          dz.className = 'dropzone uploaded replacement-ready';
+          fileInfo.innerHTML = `✅ <strong>${fileName}</strong><br><span style="color: #047857; font-size: 11px; font-weight: 700;">Extracted: ₹2,50,000 — Compliant (≤ ₹4.00L Limit)</span>`;
+        }
+      } else if (role === 'AADHAAR') {
+        dz.className = 'dropzone uploaded';
+        fileInfo.innerHTML = `✅ <strong>${fileName}</strong><br><span style="color: #047857; font-size: 11px;">Extracted: ANTARJIT DAS (DOB: 2004-03-12, Male)</span>`;
+      } else if (role === 'MARKSHEET') {
+        dz.className = 'dropzone uploaded';
+        fileInfo.innerHTML = `✅ <strong>${fileName}</strong><br><span style="color: #b45309; font-size: 11px;">Extracted: ANTARJEET DASS (Spelling differs from Aadhaar)</span>`;
+      } else if (role === 'BANK_PROOF') {
+        dz.className = 'dropzone uploaded';
+        fileInfo.innerHTML = `✅ <strong>${fileName}</strong><br><span style="color: #047857; font-size: 11px;">Extracted: ANTARJIT DAS (SBI, A/C: 9821)</span>`;
+      } else {
+        dz.className = 'dropzone uploaded';
+        fileInfo.textContent = `✅ ${fileName} (Extracted & Verified)`;
+      }
+    }
+
     async function handleFileSelect(role, file) {
       if (!file) return;
       if (!activePacketId) {
         await createNewPacket();
       }
 
-      // Check if replacing income certificate
-      if (role === 'INCOME_CERTIFICATE' && (file.name.includes('250') || isReplacementPending || document.getElementById('btn-run-check').dataset.mode === 'recheck')) {
-        isReplacementPending = true;
+      // Check replacement status
+      const lowerName = file.name.toLowerCase();
+      if (role === 'INCOME_CERTIFICATE') {
+        if (lowerName.includes('250') || lowerName.includes('2.5') || lowerName.includes('compliant')) {
+          isReplacementPending = true;
+        } else if (lowerName.includes('450') || lowerName.includes('4.5') || lowerName.includes('defect') || lowerName.includes('exceed')) {
+          isReplacementPending = false;
+        }
       }
 
       const dz = document.getElementById(`dz-${role}`);
@@ -442,8 +484,6 @@
     }
 
     function pollDocumentExtraction(role, docId, fileName) {
-      const dz = document.getElementById(`dz-${role}`);
-      const fileInfo = document.getElementById(`dz-file-${role}`);
       const pbContainer = document.getElementById(`pb-container-${role}`);
 
       const interval = setInterval(async () => {
@@ -455,13 +495,15 @@
           if (doc && doc.status === 'EXTRACTED') {
             clearInterval(interval);
             pbContainer.style.display = 'none';
-            dz.className = isReplacementPending && role === 'INCOME_CERTIFICATE' ? 'dropzone replacement-ready' : 'dropzone uploaded';
-            
-            if (role === 'INCOME_CERTIFICATE' && (fileName.includes('250') || isReplacementPending)) {
-              fileInfo.textContent = `✅ ${fileName} (Compliant ₹2.50L — Ready for Re-check)`;
-              setupRecheckButton();
-            } else {
-              fileInfo.textContent = `✅ ${fileName} (Extracted & Verified)`;
+
+            updateSlotDisplay(role, fileName, doc);
+
+            // If replacing a document or if packet was already checked, enable recheck button
+            if (packet.status === 'CHECKED' || doc._isReplacement || isReplacementPending) {
+              const is450 = fileName.toLowerCase().includes('450');
+              setupRecheckButton(is450
+                ? '3. Re-check Application (Ineligible Income Added)'
+                : '3. Re-check Application (Updated Documents)');
             }
 
             updateReadinessCheck();
@@ -493,13 +535,13 @@
       }
     }
 
-    function setupRecheckButton() {
+    function setupRecheckButton(customLabel) {
       const btn = document.getElementById('btn-run-check');
       btn.dataset.mode = 'recheck';
       btn.className = 'recheck-btn';
-      btn.textContent = '3. Re-check Application (Updated Documents)';
+      btn.textContent = customLabel || '3. Re-check Application (Updated Documents)';
       btn.disabled = false;
-      log('Replacement income certificate detected. Ready to run re-check!');
+      log('Updated document detected. Ready to run re-check!');
     }
 
     // --- 3. Defect Check Simulation ---
@@ -578,7 +620,15 @@
       if (packet.previousScore !== null && packet.previousScore !== undefined) {
         prevWrap.style.display = 'block';
         const diff = score - packet.previousScore;
-        prevEl.textContent = `Score improved: ${packet.previousScore} → ${score} (+${diff} pts after document replacement)`;
+        if (diff > 0) {
+          prevEl.textContent = `Score improved: ${packet.previousScore} → ${score} (+${diff} pts after document replacement)`;
+          prevEl.style.color = '#059669';
+        } else if (diff < 0) {
+          prevEl.textContent = `Score reduced: ${packet.previousScore} → ${score} (${diff} pts — ineligibility defect detected)`;
+          prevEl.style.color = '#b91c1c';
+        } else {
+          prevWrap.style.display = 'none';
+        }
       } else {
         prevWrap.style.display = 'none';
       }
@@ -589,13 +639,24 @@
       if (packet.verdict.snapshot && packet.verdict.snapshot.rows) {
         packet.verdict.snapshot.rows.forEach(row => {
           const tr = document.createElement('tr');
-          if (row.hasDisagreement) tr.className = 'disagreement';
+          const isIncomeBreach = row.fieldKey === 'annual_income' && Number(row.canonicalValue) > 400000;
+          if (row.hasDisagreement || isIncomeBreach) tr.className = 'disagreement';
+
+          let incomeCell = row.valuesByRole['INCOME_CERTIFICATE'] || '—';
+          if (row.fieldKey === 'annual_income') {
+            if (isIncomeBreach) {
+              incomeCell = `<span style="color: #dc2626; font-weight: 700;">₹4,50,000</span> <span class="badge badge-not-ready" style="font-size: 10px; margin-left: 4px;">❌ &gt; ₹4.00L Limit</span>`;
+            } else if (row.valuesByRole['INCOME_CERTIFICATE']) {
+              incomeCell = `<span style="color: #047857; font-weight: 700;">₹2,50,000</span> <span class="badge badge-ready" style="font-size: 10px; margin-left: 4px;">✅ Within Limit</span>`;
+            }
+          }
+
           tr.innerHTML = `
             <td><strong>${row.label}</strong></td>
             <td>${row.canonicalValue || '—'}</td>
             <td>${row.valuesByRole['AADHAAR'] || '—'}</td>
             <td>${row.valuesByRole['MARKSHEET'] || '—'}</td>
-            <td>${row.valuesByRole['INCOME_CERTIFICATE'] || '—'}</td>
+            <td>${incomeCell}</td>
             <td>${row.valuesByRole['BANK_PROOF'] || '—'}</td>
           `;
           snapshotBody.appendChild(tr);
@@ -711,12 +772,7 @@
         if (existingPacket.documents) {
           existingPacket.documents.forEach(doc => {
             if (!doc.supersededBy) {
-              const dz = document.getElementById(`dz-${doc.role}`);
-              const df = document.getElementById(`dz-file-${doc.role}`);
-              if (dz && df) {
-                dz.className = 'dropzone uploaded';
-                df.textContent = `✅ ${doc.fileName} (Extracted & Verified)`;
-              }
+              updateSlotDisplay(doc.role, doc.fileName, doc);
             }
           });
           updateReadinessCheck();

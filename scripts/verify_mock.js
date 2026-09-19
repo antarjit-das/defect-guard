@@ -150,11 +150,46 @@ async function runMockVerification() {
   assert.strictEqual(packet.verdict.findings.length, 2, 'Only 2 findings should remain');
   console.log('✔ Test 6: Re-check cleared R-07, score dynamically improved from 40 -> 65 (+25 pts)!');
 
-  // 8. Reset Verification
+  // 8. Test Uploading Ineligible 450k Income Certificate (Detect Exceeded Income Ceiling)
+  console.log('\nTesting uploading Income 450k.pdf again to verify defect detection...');
+  const ineligibleUploadMeta = await api.requestUploadUrl(initRes.packetId, types.DocumentRole.INCOME_CERTIFICATE, {
+    name: 'Income 450k.pdf',
+    size: 133444,
+    type: 'application/pdf'
+  });
+  await api.uploadFile(ineligibleUploadMeta.uploadUrl, { name: 'Income 450k.pdf' });
+  await api.markUploaded(initRes.packetId, ineligibleUploadMeta.documentId);
+
+  for (let i = 0; i < 20; i++) {
+    await new Promise(r => setTimeout(r, 150));
+    packet = await api.getPacket(initRes.packetId);
+    const ineligDoc = packet.documents.find(d => d.documentId === ineligibleUploadMeta.documentId);
+    if (ineligDoc && ineligDoc.status === types.DocumentStatus.EXTRACTED) break;
+  }
+
+  // Verify extracted document has 450k
+  const ineligDoc = packet.documents.find(d => d.documentId === ineligibleUploadMeta.documentId);
+  const incField = ineligDoc.extraction.fields.find(f => f.fieldKey === 'annual_income');
+  assert.strictEqual(Number(incField.normalizedValue), 450000, 'Income field must extract 450000');
+  
+  await api.runCheck(initRes.packetId);
+  for (let i = 0; i < 20; i++) {
+    await new Promise(r => setTimeout(r, 150));
+    packet = await api.getPacket(initRes.packetId);
+    if (packet.status === types.PacketStatus.CHECKED) break;
+  }
+
+  // Must detect R-07 and score must return to 40
+  assert.strictEqual(packet.verdict.score, 40, 'Score must return to 40 when 450k income cert is uploaded');
+  const defectRuleIds = packet.verdict.findings.map(f => f.ruleId);
+  assert.ok(defectRuleIds.includes('R-07'), 'R-07 must be detected when 450k income certificate is uploaded');
+  console.log('✔ Test 7: Income 450k.pdf correctly detected as exceeding ₹4.00L ceiling (R-07 triggered, score 40)!');
+
+  // 9. Reset Verification
   api.resetSession();
   const clearedPacket = await api.getPacket(initRes.packetId);
   assert.strictEqual(clearedPacket, null, 'Session must be cleared after reset');
-  console.log('✔ Test 7: Reset cleared session cleanly');
+  console.log('✔ Test 8: Reset cleared session cleanly');
 
   console.log('\n' + '='.repeat(60));
   console.log('ALL MOCK MODE VERIFICATION TESTS PASSED FLAWLESSLY!');
