@@ -12,7 +12,7 @@ scheme:
     - INCOME_CERTIFICATE
     - MARKSHEET
     - BANK_PROOF
-  maxFileBytes: 5242880
+  maxFileBytes: 204800
   allowedMimeTypes:
     - application/pdf
     - image/jpeg
@@ -61,17 +61,17 @@ rules:
     defaultFix: "Upload a bank passbook or statement for an active bank account in the student's own name."
 
   - id: R-04
-    title: Institution enrollment requires verification
-    severity: AMBER
+    title: Declared annual income exceeds the scheme ceiling
+    severity: RED
     category: ELIGIBILITY
     kind: DETERMINISTIC
     inspects:
-      - institution_name
+      - annual_income
     needsAdjudication: false
-    source: "MMNBA 2026 Executive Order Clause 1 — Eligible students must be admitted in Govt or Provincialised institutions under Fee Waiver Scheme."
+    source: "MMNBA scheme guidelines, Means Test — ceiling ₹2,50,000 p.a."
     sourceUrl: "https://directorateofhighereducation.assam.gov.in"
-    defaultReason: "Your institution requires confirmation of provincialised status and enrollment under the Govt of Assam Fee Waiver Scheme."
-    defaultFix: "Verify with your college nodal officer that your admission is enrolled under the Assam Govt Fee Waiver Scheme before portal submission."
+    defaultReason: "Your income certificate shows an annual family income of {annual_income}, which is above this scheme's ceiling of ₹2,50,000."
+    defaultFix: "Check the income certificate figure. If it is correct, this scheme's income ceiling is exceeded and you should speak to your institute's nodal officer about other schemes before submitting."
 
   - id: R-05
     title: Missing mandatory supporting document
@@ -160,7 +160,7 @@ rules:
       - contentType
       - sizeBytes
     needsAdjudication: false
-    source: "MMNBA Technical Guidelines — Only PDF, JPEG, and PNG files up to 5 MB are accepted."
+    source: "MMNBA Technical Guidelines — Only PDF, JPEG, and PNG files up to 5 MB are accepted (recommended under 200 KB)."
     sourceUrl: "https://directorateofhighereducation.assam.gov.in"
-    defaultReason: "One of your files exceeds the size limit or is in an unsupported format."
-    defaultFix: "Convert your file to PDF, JPEG, or PNG and ensure the size is under 5 MB (recommended under 200 KB)."
+    defaultReason: "One of your files exceeds the scheme recommended size limit (200 KB) or is in an unsupported format."
+    defaultFix: "Convert your file to PDF, JPEG, or PNG and ensure the size is under 200 KB to avoid state portal rejection."

@@ -1,0 +1,16 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "defect-guard"
+s3_prefix = "defect-guard"
+region = "ap-south-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+image_repositories = []
+resolve_s3 = true
+disable_rollback = true
+template_file = ".aws-sam/build/template.yaml"
+
+[default.global.parameters]
+region = "ap-south-1"

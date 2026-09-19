@@ -31,7 +31,7 @@ def test_yaml_syntax_and_scheme_metadata():
         "MARKSHEET",
         "BANK_PROOF",
     }
-    assert scheme["maxFileBytes"] == 5_242_880
+    assert scheme["maxFileBytes"] == 204_800
 
 
 def test_all_11_rules_integrity():

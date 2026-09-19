@@ -5,6 +5,8 @@ Emits typed Finding objects with stable IDs and tags candidates for AI adjudicat
 Zero external AWS/boto3 imports.
 """
 
+'''i need to understand the code here better bruh, the caveat is just that im too shit in Python OOPS so far'''
+
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import yaml
@@ -46,7 +48,7 @@ class RuleEngine:
     """Evaluates scholarship packets against YAML-defined scheme rules."""
 
     def __init__(self, ruleset_path: Optional[Path] = None):
-        self.ruleset_path = ruleset_path or DEFAULT_RULESET_PATH
+        self.ruleset_path = ruleset_path or DEFAULT_RULESET_PATH   # ruleset_path has been added as extra var, cuz in future we may do tests on how this engine would behave with another ruleset or with a corrupt yaml. so we dont need to continuously overwrite the default_ruleset_path everytime
         with open(self.ruleset_path, "r", encoding="utf-8") as f:
             self.ruleset = yaml.safe_load(f)
 
@@ -112,9 +114,13 @@ class RuleEngine:
             "mandatoryRoles",
             [ROLE_AADHAAR, ROLE_INCOME_CERTIFICATE, ROLE_MARKSHEET, ROLE_BANK_PROOF],
         )
-        # Collect all document types that the student actually uploaded
+        # A document is present after S3 upload has been acknowledged. Extraction
+        # status must not turn an uploaded (or extraction-failed) document into a
+        # false "missing document" penalty.
         uploaded_roles = set()
-        for doc in active_docs:
+        for doc in documents:
+            if doc.supersededBy is not None or doc.status == DocumentStatus.PENDING_UPLOAD:
+                continue
             role_name = doc.role.value if hasattr(doc.role, "value") else str(doc.role)
             uploaded_roles.add(role_name)
 
@@ -207,14 +213,21 @@ class RuleEngine:
                     confidence=0.99,
                 )
 
-        # --- Rule R-04: Institution enrollment requires verification (AMBER) ---
-        inst_row = rows_by_field.get(FIELD_INSTITUTION_NAME)
-        if inst_row and inst_row.canonicalValue:
-            add_finding(
-                "R-04",
-                [DocumentReference(role=DocumentRole(inst_row.canonicalSource or ROLE_MARKSHEET), value=inst_row.canonicalValue)],
-                confidence=0.85,
-            )
+        # --- Rule R-04: Declared annual income exceeds the scheme ceiling (RED) ---
+        income_row = rows_by_field.get(FIELD_ANNUAL_INCOME)
+        r04_ceiling = 250_000
+        if income_row and income_row.canonicalValue:
+            income_num = normalize_money(income_row.canonicalValue)
+            if income_num is not None and income_num > r04_ceiling:
+                add_finding(
+                    "R-04",
+                    [DocumentReference(role=DocumentRole(income_row.canonicalSource or ROLE_INCOME_CERTIFICATE), value=income_row.canonicalValue)],
+                    custom_reason=(
+                        f"Your income certificate shows an annual family income of ₹{income_num:,}, "
+                        f"which is above this scheme's ceiling of ₹{r04_ceiling:,}."
+                    ),
+                    confidence=0.99,
+                )
 
         # --- Rule R-08: Income certificate issuing authority requires verification (AMBER) ---
         auth_row = rows_by_field.get(FIELD_INCOME_CERT_AUTHORITY)
@@ -251,13 +264,15 @@ class RuleEngine:
                 )
 
             # R-11: File Size Exceeds Soft Cap (AMBER)
-            if doc.sizeBytes > 200 * 1024:  # > 200 KB soft warning
+            scheme_max_bytes = self.scheme_meta.get("maxFileBytes", 204800)
+            if doc.sizeBytes and doc.sizeBytes > scheme_max_bytes:
                 size_kb = doc.sizeBytes // 1024
+                scheme_max_kb = scheme_max_bytes // 1024
                 add_finding(
                     "R-11",
                     [DocumentReference(role=role_enum, value=f"{size_kb} KB")],
-                    custom_reason=f"Document {doc.fileName} is {size_kb} KB, which exceeds the scholarship portal recommendation (200 KB).",
-                    custom_fix="Consider compressing the scan under 200 KB to prevent rejection at final portal submission.",
+                    custom_reason=f"Document {doc.fileName} is {size_kb} KB, which exceeds the scheme recommendation ({scheme_max_kb} KB).",
+                    custom_fix=f"Consider compressing the scan under {scheme_max_kb} KB to prevent rejection at final portal submission.",
                     confidence=0.85,
                 )
 

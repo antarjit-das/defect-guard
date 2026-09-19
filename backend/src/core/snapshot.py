@@ -8,7 +8,7 @@ Zero external AWS/boto3 imports.
 
 from typing import List, Dict, Optional, Any
 
-from backend.src.core.fields import (
+from .fields import (
     ROLE_PRECEDENCE,
     FIELD_LABELS,
     ALL_FIELD_KEYS,
@@ -20,13 +20,14 @@ from backend.src.core.fields import (
     FIELD_INCOME_CERT_DATE,
     FIELD_ANNUAL_INCOME,
 )
-from backend.src.core.models import (
+from .models import (
     DocumentItem,
     DocumentStatus,
     Snapshot,
     SnapshotRow,
+    is_usable_extraction,
 )
-from backend.src.core.normalize import (
+from .normalize import (
     normalize_name,
     normalize_date,
     normalize_money,
@@ -89,12 +90,13 @@ def build_snapshot(documents: List[DocumentItem]) -> Snapshot:
     4. Evaluates disagreement across roles using normalized values.
     5. Excludes fields that have no values reported in any document.
     """
-    # Filter active, successfully extracted documents
+    # Filter active, successfully extracted documents with usable fields
     active_docs: List[DocumentItem] = [
         doc for doc in documents
         if doc.supersededBy is None
         and doc.status == DocumentStatus.EXTRACTED
         and doc.extraction is not None
+        and is_usable_extraction(doc.extraction)
     ]
 
     # Map: field_key -> { role_str: raw_value_str }
