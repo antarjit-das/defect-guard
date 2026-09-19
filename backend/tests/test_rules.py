@@ -274,3 +274,70 @@ def test_rule_bank_account_holder_mismatch():
     r03 = next(f for f in findings if f.ruleId == "R-03")
     assert r03.severity == Severity.RED
     assert r03.needsAdjudication is True
+
+
+def test_r11_size_semantics_and_boundaries():
+    """Verify R-11 scheme size compliance semantics and distinct upload gate limits:
+    - 150 KB (below 200 KB): upload valid, no warning, R-11 does NOT trigger
+    - exactly 200 KB (204,800 bytes): upload valid, no warning, R-11 does NOT trigger
+    - 204,801 bytes: upload valid, soft warning flagged, R-11 MUST trigger (AMBER)
+    - 350 KB: upload valid, soft warning flagged, R-11 MUST trigger (AMBER)
+    - 6 MB (> 5 MB API cap): rejected at upload layer (400 FILE_TOO_LARGE)
+    """
+    from backend.src.core.validators import validate_upload_constraints
+
+    engine = RuleEngine()
+
+    def evaluate_doc_size(size_bytes: int):
+        doc = DocumentItem(
+            documentId="doc-size-test",
+            role=DocumentRole.MARKSHEET,
+            fileName="marksheet.pdf",
+            contentType="application/pdf",
+            sizeBytes=size_bytes,
+            status=DocumentStatus.EXTRACTED,
+            extraction=DocumentExtraction(fields=[]),
+        )
+        snap = build_snapshot([doc])
+        res = engine.evaluate(snap, [doc])
+        return [f for f in res if f.ruleId == "R-11"]
+
+    # 1. Below boundary: 150,000 bytes
+    is_valid, err, has_warn = validate_upload_constraints("application/pdf", 150_000)
+    assert is_valid is True
+    assert err is None
+    assert has_warn is False
+    assert len(evaluate_doc_size(150_000)) == 0
+
+    # 2. Exactly at 200 KB boundary: 204,800 bytes
+    is_valid, err, has_warn = validate_upload_constraints("application/pdf", 204_800)
+    assert is_valid is True
+    assert err is None
+    assert has_warn is False
+    assert len(evaluate_doc_size(204_800)) == 0
+
+    # 3. 1 byte above 200 KB boundary: 204,801 bytes
+    is_valid, err, has_warn = validate_upload_constraints("application/pdf", 204_801)
+    assert is_valid is True
+    assert err is None
+    assert has_warn is True  # Upload accepted but with soft recommendation warning
+    r11_204801 = evaluate_doc_size(204_801)
+    assert len(r11_204801) == 1
+    assert r11_204801[0].severity == Severity.AMBER
+    assert "200 KB" in r11_204801[0].reason
+
+    # 4. Clearly above 200 KB but under 5 MB: 350,000 bytes
+    is_valid, err, has_warn = validate_upload_constraints("application/pdf", 350_000)
+    assert is_valid is True
+    assert err is None
+    assert has_warn is True
+    r11_350k = evaluate_doc_size(350_000)
+    assert len(r11_350k) == 1
+    assert r11_350k[0].severity == Severity.AMBER
+    assert "341 KB" in r11_350k[0].reason
+
+    # 5. Above 5 MB API upload limit: 6 MB
+    is_valid, err, has_warn = validate_upload_constraints("application/pdf", 6 * 1024 * 1024)
+    assert is_valid is False
+    assert "5 MB" in err
+    # Demonstrates that >5MB files are rejected at the upload gate before ever reaching rules engine

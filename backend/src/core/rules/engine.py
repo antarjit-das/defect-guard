@@ -264,13 +264,15 @@ class RuleEngine:
                 )
 
             # R-11: File Size Exceeds Soft Cap (AMBER)
-            if doc.sizeBytes > 200 * 1024:  # > 200 KB soft warning
+            scheme_max_bytes = self.scheme_meta.get("maxFileBytes", 204800)
+            if doc.sizeBytes and doc.sizeBytes > scheme_max_bytes:
                 size_kb = doc.sizeBytes // 1024
+                scheme_max_kb = scheme_max_bytes // 1024
                 add_finding(
                     "R-11",
                     [DocumentReference(role=role_enum, value=f"{size_kb} KB")],
-                    custom_reason=f"Document {doc.fileName} is {size_kb} KB, which exceeds the scholarship portal recommendation (200 KB).",
-                    custom_fix="Consider compressing the scan under 200 KB to prevent rejection at final portal submission.",
+                    custom_reason=f"Document {doc.fileName} is {size_kb} KB, which exceeds the scheme recommendation ({scheme_max_kb} KB).",
+                    custom_fix=f"Consider compressing the scan under {scheme_max_kb} KB to prevent rejection at final portal submission.",
                     confidence=0.85,
                 )
 
