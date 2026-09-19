@@ -249,7 +249,7 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
                             normalizedValue=norm_val,
                             confidence=conf,
                             evidence=ev,
-                            source="BEDROCK_CLAUDE_SONNET",
+                            source="BEDROCK_NOVA_PRO",
                             needsConfirmation=needs_conf,
                         )
                     )
