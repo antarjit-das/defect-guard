@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 import yaml
 
-from backend.src.core.models import (
+from ..models import (
     Snapshot,
     DocumentItem,
     Finding,
@@ -22,11 +22,11 @@ from backend.src.core.models import (
     DocumentStatus,
     DocumentQuality,
 )
-from backend.src.core.normalize import (
+from ..normalize import (
     normalize_name,
     normalize_money,
 )
-from backend.src.core.fields import (
+from ..fields import (
     FIELD_STUDENT_NAME,
     FIELD_FATHER_NAME,
     FIELD_PARENT_NAME,

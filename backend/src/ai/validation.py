@@ -19,7 +19,7 @@ import json
 import logging
 from typing import List, Dict, Any, Optional, Tuple
 
-from backend.src.core.models import (
+from ..core.models import (
     Finding,
     Severity,
     AIStatus,

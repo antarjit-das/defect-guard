@@ -184,10 +184,11 @@
     </div>
   </div>
 
+  <script src="config.js"></script>
   <script>
-    // Fixed AWS HTTP API Gateway Base URL
-    // Can be overridden via window.DEFECT_GUARD_API_URL or environment variable in production
-    const DEFAULT_API_BASE_URL = window.DEFECT_GUARD_API_URL || "https://api.defectguard.assam.gov.in/v1";
+    // Set the deployed HTTP API URL in config.js. A global override is useful for
+    // temporary localhost testing without changing the application source.
+    const DEFAULT_API_BASE_URL = window.DEFECT_GUARD_API_URL || "";
 
     let activePacketId = null;
     let uploadedDocsCount = 0;
@@ -201,14 +202,17 @@
     }
 
     function getApiBase() {
+      if (!DEFAULT_API_BASE_URL) {
+        throw new Error('AWS API URL is not configured. Set DEFECT_GUARD_API_URL in frontend/config.js.');
+      }
       return DEFAULT_API_BASE_URL.replace(/\/+$/, '');
     }
 
     // --- 1. POST /packets ---
     async function createNewPacket() {
-      const api = getApiBase();
-      log(`Calling POST ${api}/packets to create check packet...`);
       try {
+        const api = getApiBase();
+        log(`Calling POST ${api}/packets to create check packet...`);
         const res = await fetch(`${api}/packets`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -221,8 +225,8 @@
         document.getElementById('packet-status-badge').textContent = 'DRAFT';
         document.getElementById('packet-status-badge').className = 'badge badge-risky';
       } catch (err) {
-        log(`Error creating packet on AWS (${err.message}). Using fallback demo packet ID.`);
-        activePacketId = 'pkt-' + Math.random().toString(36).substring(2, 9);
+        activePacketId = null;
+        log(`Could not create an AWS packet: ${err.message}`);
       }
     }
 
@@ -232,9 +236,9 @@
 
       if (!activePacketId) {
         await createNewPacket();
+        if (!activePacketId) return;
       }
 
-      const api = getApiBase();
       const dz = document.getElementById(`dz-${role}`);
       const fileInfo = document.getElementById(`dz-file-${role}`);
 
@@ -254,6 +258,7 @@
       log(`Requesting presigned upload URL for ${role} (${file.name})...`);
 
       try {
+        const api = getApiBase();
         // Step A: Request Presigned URL (POST /packets/{id}/documents)
         const docReq = await fetch(`${api}/packets/${activePacketId}/documents`, {
           method: 'POST',
@@ -286,6 +291,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
         });
+        if (!markReq.ok) throw new Error(`Failed starting extraction: HTTP ${markReq.status}`);
 
         dz.className = 'dropzone uploaded';
         fileInfo.textContent = `✅ ${file.name} (Uploaded & Processing)`;
@@ -293,13 +299,15 @@
         waitForDocumentsToExtract();
 
       } catch (err) {
-        log(`Direct AWS upload encountered: ${err.message}. Simulating upload state.`);
+        log(`AWS upload failed: ${err.message}`);
+        if (window.DEFECT_GUARD_DEMO === true) {
         dz.className = 'dropzone uploaded';
         fileInfo.textContent = `✅ ${file.name} (Ready)`;
         uploadedDocsCount++;
         if (uploadedDocsCount >= 3) {
           document.getElementById('btn-run-check').disabled = false;
           document.getElementById('btn-run-check').className = '';
+        }
         }
       }
     }
@@ -349,28 +357,27 @@
     // --- 3. POST /packets/{id}/check & Poll GET /packets/{id} ---
     async function triggerDefectCheck() {
       if (!activePacketId) return;
-      const api = getApiBase();
-      log(`Triggering defect check on AWS API (POST /packets/${activePacketId}/check)...`);
       document.getElementById('btn-run-check').disabled = true;
 
       try {
+        const api = getApiBase();
+        log(`Triggering defect check on AWS API (POST /packets/${activePacketId}/check)...`);
         const res = await fetch(`${api}/packets/${activePacketId}/check`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
         });
+        if (!res.ok) throw new Error(`Failed starting check: HTTP ${res.status}`);
         log(`Defect check started. Polling GET /packets/${activePacketId} for results...`);
         startPolling();
       } catch (err) {
-        log(`Check dispatch notice: ${err.message}. Loading verified evaluation results...`);
-        loadVerifiedEvaluation();
+        document.getElementById('btn-run-check').disabled = false;
+        log(`AWS check could not start: ${err.message}`);
       }
     }
 
     function startPolling() {
       if (pollInterval) clearInterval(pollInterval);
-      if (readinessPollInterval) clearInterval(readinessPollInterval);
-      readinessPollInterval = null;
       const api = getApiBase();
       let pollCount = 0;
 
@@ -391,20 +398,9 @@
 
         if (pollCount > 15) {
           clearInterval(pollInterval);
-          loadVerifiedEvaluation();
+          log('The AWS check did not finish within 30 seconds. Keep this session open and try again shortly.');
         }
       }, 2000);
-    }
-
-    async function loadVerifiedEvaluation() {
-      try {
-        const resp = await fetch('fixtures/packet_checked.json');
-        const packet = await resp.json();
-        renderPacket(packet);
-        log(`Verdict displayed! Readiness score: ${packet.verdict.score}/100.`);
-      } catch (e) {
-        log(`Failed loading fixture: ${e.message}`);
-      }
     }
 
     function renderPacket(packet) {

@@ -15,8 +15,8 @@ Contract:
 import logging
 from typing import Dict, Any
 
-from backend.src.aws.ddb import get_full_packet
-from backend.src.handlers.api_util import api_response, api_error
+from ..aws.ddb import get_full_packet
+from .api_util import api_response, api_error
 
 logger = logging.getLogger(__name__)
 

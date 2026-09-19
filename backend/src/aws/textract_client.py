@@ -9,7 +9,7 @@ from typing import Dict, List, Any, Optional
 import boto3
 from botocore.config import Config
 
-from backend.src.core.fields import TEXTRACT_QUERIES
+from ..core.fields import TEXTRACT_QUERIES
 
 DEFAULT_REGION = os.environ.get("AWS_REGION", "ap-south-1")
 DEFAULT_BUCKET = os.environ.get("UPLOADS_BUCKET", "defect-guard-uploads")

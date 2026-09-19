@@ -6,7 +6,7 @@ Zero external AWS/boto3 imports.
 """
 
 from typing import Dict, List, Tuple, Optional
-from backend.src.core.fields import ROLE_FIELDS, FIELD_LABELS
+from ..core.fields import ROLE_FIELDS, FIELD_LABELS
 
 
 EXTRACTION_SYSTEM_PROMPT = (

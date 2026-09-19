@@ -11,8 +11,8 @@ import uuid
 import logging
 from typing import Dict, Any
 
-from backend.src.aws.ddb import create_packet_meta
-from backend.src.handlers.api_util import api_response, api_error
+from ..aws.ddb import create_packet_meta
+from .api_util import api_response, api_error
 
 logger = logging.getLogger(__name__)
 

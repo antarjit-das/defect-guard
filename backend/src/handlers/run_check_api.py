@@ -23,9 +23,9 @@ import logging
 from typing import Dict, Any
 import boto3
 
-from backend.src.core.models import PacketStatus, DocumentStatus, is_usable_extraction
-from backend.src.aws.ddb import get_full_packet, update_packet_status
-from backend.src.handlers.api_util import api_response, api_error
+from ..core.models import PacketStatus, DocumentStatus, is_usable_extraction
+from ..aws.ddb import get_full_packet, update_packet_status
+from .api_util import api_response, api_error
 
 logger = logging.getLogger(__name__)
 

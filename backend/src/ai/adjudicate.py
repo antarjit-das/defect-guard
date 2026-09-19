@@ -7,7 +7,7 @@ Zero external AWS/boto3 imports.
 """
 
 from typing import List, Tuple, Dict, Any
-from backend.src.core.models import Finding, Snapshot
+from ..core.models import Finding, Snapshot
 
 
 ADJUDICATION_SYSTEM_PROMPT = """You are an expert scholarship verification adjudicator assisting an NSP (National Scholarship Portal) Institute Nodal Officer in Assam.

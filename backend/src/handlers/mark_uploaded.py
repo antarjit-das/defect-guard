@@ -23,15 +23,15 @@ from typing import Dict, Any
 import boto3
 from botocore.exceptions import ClientError
 
-from backend.src.core.models import DocumentStatus, PacketStatus
-from backend.src.aws.ddb import (
+from ..core.models import DocumentStatus, PacketStatus
+from ..aws.ddb import (
     get_packet_meta,
     get_full_packet,
     update_document_extraction,
     update_packet_status,
 )
-from backend.src.aws.s3_client import get_authoritative_metadata
-from backend.src.handlers.api_util import api_response, api_error
+from ..aws.s3_client import get_authoritative_metadata
+from .api_util import api_response, api_error
 
 logger = logging.getLogger(__name__)
 
