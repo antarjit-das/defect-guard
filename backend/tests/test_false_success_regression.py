@@ -80,8 +80,8 @@ def test_b_empty_extraction_reaches_worker(
     mock_textract.return_value = {
         "query_answers": {},
         "form_kvs": {},
-        "raw_lines": [],
-        "mean_confidence": 0.0,
+        "raw_lines": ["Government of India", "Aadhaar Card"],
+        "mean_confidence": 0.90,
         "page_count": 1,
     }
 
@@ -114,6 +114,46 @@ def test_b_empty_extraction_reaches_worker(
     assert call_kwargs.get("extraction_dict") is None
 
     # Verify packet status was NOT updated to READY_TO_CHECK
+    mock_up_pkt.assert_not_called()
+
+
+@patch("backend.src.handlers.extract_document.get_authoritative_metadata")
+@patch("backend.src.handlers.extract_document.extract_document_sync")
+@patch("backend.src.handlers.extract_document.invoke_bedrock_structured")
+@patch("backend.src.handlers.extract_document.update_document_extraction")
+@patch("backend.src.handlers.extract_document.update_packet_status")
+def test_b2_textract_empty_ocr_distinguished(
+    mock_up_pkt, mock_up_doc, mock_bedrock, mock_textract, mock_s3_meta
+):
+    """Textract completes cleanly but produces no OCR lines or queries: fails without calling Bedrock."""
+    mock_s3_meta.return_value = {"contentLength": 50000, "contentType": "image/jpeg"}
+    mock_textract.return_value = {
+        "query_answers": {},
+        "form_kvs": {},
+        "raw_lines": [],
+        "mean_confidence": 0.0,
+        "page_count": 1,
+    }
+
+    event = {
+        "packetId": "pkt-b2",
+        "documentId": "doc-b2",
+        "role": "AADHAAR",
+        "objectKey": "packets/pkt-b2/doc-b2.jpg",
+    }
+
+    res = handle_extract_document(event)
+
+    assert res["status"] == "FAILED"
+    assert "Textract completed but detected no readable text" in res["error"]
+
+    mock_up_doc.assert_called_once()
+    call_kwargs = mock_up_doc.call_args[1]
+    assert call_kwargs["status"] == DocumentStatus.EXTRACTION_FAILED
+    assert "Textract completed but detected no readable text" in call_kwargs["error"]
+
+    # Bedrock must not be invoked on empty OCR
+    mock_bedrock.assert_not_called()
     mock_up_pkt.assert_not_called()
 
 
@@ -163,8 +203,11 @@ def test_c_textract_failure_becomes_extraction_failed(
     assert call_kwargs["status"] == DocumentStatus.EXTRACTION_FAILED
     assert call_kwargs["status"] != DocumentStatus.EXTRACTED
     assert "SubscriptionRequiredException" in call_kwargs["error"]
+    assert "Textract service failure" in call_kwargs["error"]
     assert call_kwargs.get("extraction_dict") is None
 
+    # Bedrock must not be invoked when Textract failed
+    mock_bedrock.assert_not_called()
     mock_up_pkt.assert_not_called()
 
 

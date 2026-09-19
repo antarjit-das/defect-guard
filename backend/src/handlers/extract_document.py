@@ -149,11 +149,13 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
 
         # 1. Fetch authoritative S3 metadata (never trust client)
         bucket = event.get("bucketName", DEFAULT_BUCKET)
+        content_length: Optional[int] = None
         try:
             auth_meta = get_authoritative_metadata(object_key, bucket_name=bucket)
-            logger.info("Authoritative S3 metadata: %s bytes, type=%s", auth_meta["contentLength"], auth_meta["contentType"])
+            content_length = auth_meta.get("contentLength")
+            logger.info("Authoritative S3 metadata: %s bytes, type=%s", content_length, auth_meta.get("contentType"))
         except Exception as s3_err:
-            logger.warning("Could not read S3 head_object: %s. Continuing with default storage.", str(s3_err))
+            logger.warning("Could not read S3 head_object: %s. Continuing with registered storage metadata.", str(s3_err))
 
         # 2. Textract extraction
         textract_res = None
@@ -166,12 +168,41 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
             )
         except Exception as tex_err:
             textract_error = _safe_error_message("Textract", tex_err)
-            logger.warning("Textract analyze_document exception: %s. Proceeding with offline/mock flow.", textract_error)
+            logger.error("Textract service invocation failed for packet=%s, doc=%s, role=%s: %s", packet_id, document_id, role, textract_error)
+
+        # Distinguish:
+        # Case A: Textract service failure (e.g. SubscriptionRequiredException, AccessDeniedException)
+        if textract_error:
+            error_msg = f"Textract service failure: {textract_error}"
+            logger.warning("Document %s (packet %s) failed due to Textract service error: %s", document_id, packet_id, error_msg)
+            update_document_extraction(
+                packet_id=packet_id,
+                document_id=document_id,
+                extraction_dict=None,
+                status=DocumentStatus.EXTRACTION_FAILED,
+                error=error_msg,
+                size_bytes=content_length,
+            )
+            return {"status": "FAILED", "documentId": document_id, "error": error_msg}
 
         query_answers = textract_res.get("query_answers", {}) if textract_res else {}
         form_kvs = textract_res.get("form_kvs", {}) if textract_res else {}
         raw_lines = textract_res.get("raw_lines", []) if textract_res else []
         mean_conf = textract_res.get("mean_confidence", 0.0) if textract_res else 0.0
+
+        # Case B: Textract succeeds but detects no text, queries, or form fields
+        if not (query_answers or form_kvs or raw_lines):
+            error_msg = "Textract completed but detected no readable text or form fields"
+            logger.warning("Document %s (packet %s) produced empty Textract OCR: %s", document_id, packet_id, error_msg)
+            update_document_extraction(
+                packet_id=packet_id,
+                document_id=document_id,
+                extraction_dict=None,
+                status=DocumentStatus.EXTRACTION_FAILED,
+                error=error_msg,
+                size_bytes=content_length,
+            )
+            return {"status": "FAILED", "documentId": document_id, "error": error_msg}
 
         # 3. Bedrock extraction invocation
         extracted_fields_list: List[ExtractedField] = []
@@ -289,6 +320,7 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
                 extraction_dict=None,
                 status=DocumentStatus.EXTRACTION_FAILED,
                 error=error_msg,
+                size_bytes=content_length,
             )
             return {"status": "FAILED", "documentId": document_id, "error": error_msg}
 
@@ -298,6 +330,7 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
             document_id=document_id,
             extraction_dict=extraction.model_dump(),
             status=DocumentStatus.EXTRACTED,
+            size_bytes=content_length,
         )
 
         # 8. Check if packet is now ready to check

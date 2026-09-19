@@ -266,10 +266,11 @@ def update_document_extraction(
     extraction_dict: Optional[Dict[str, Any]] = None,
     status: DocumentStatus = DocumentStatus.EXTRACTED,
     error: Optional[str] = None,
+    size_bytes: Optional[int] = None,
     table_name: Optional[str] = None,
     resource: Optional[Any] = None,
 ) -> None:
-    """AP4: Update DOC# item setting extraction and status."""
+    """AP4: Update DOC# item setting extraction, status, and authoritative size."""
     ddb = resource or get_dynamodb_resource()
     table = ddb.Table(table_name or DEFAULT_TABLE)
 
@@ -287,6 +288,10 @@ def update_document_extraction(
     if extraction_dict is not None and len(extraction_dict) > 0 and status != DocumentStatus.EXTRACTION_FAILED:
         set_clauses.append("extraction = :ex")
         expr_values[":ex"] = floats_to_decimals(extraction_dict)
+
+    if size_bytes is not None:
+        set_clauses.append("sizeBytes = :sb")
+        expr_values[":sb"] = size_bytes
 
     if error:
         set_clauses.append("#err = :err")
