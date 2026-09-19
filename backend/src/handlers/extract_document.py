@@ -1,0 +1,278 @@
+"""Asynchronous worker Lambda: fn_extract_document.
+
+Triggered asynchronously after document upload.
+Workflow:
+1. Calls S3 head_object to fetch authoritative ContentLength and ContentType.
+2. Calls Textract analyze_document (QUERIES + FORMS) synchronously.
+3. Builds Bedrock extraction prompt with Textract results, form key-values, and raw OCR lines.
+4. Invokes Bedrock with DocumentExtraction JSON Schema.
+5. If Bedrock succeeds: parses typed fields.
+   If Bedrock unavailable / throttled: falls back to deterministic Textract query answers.
+6. Runs pure-Python normalizers:
+   - Names: normalize_name
+   - Dates: normalize_date
+   - Money: normalize_money
+   - IFSC: normalize_ifsc
+   - Account: normalize_account_number + mask_account_number
+   - Aadhaar: normalize_aadhaar + mask_aadhaar + Verhoeff validation
+7. Updates DynamoDB DOC# item setting extraction payload and status = EXTRACTED (or EXTRACTION_FAILED).
+8. Checks if all active documents in packet are now EXTRACTED. If so, transitions packet status to READY_TO_CHECK.
+"""
+
+import json
+import logging
+from typing import Dict, Any, List, Optional, Tuple
+
+from backend.src.core.models import (
+    DocumentStatus,
+    PacketStatus,
+    DocumentQuality,
+    DocumentExtraction,
+    ExtractedField,
+)
+from backend.src.core.fields import (
+    ROLE_FIELDS,
+    FIELD_STUDENT_NAME,
+    FIELD_FATHER_NAME,
+    FIELD_PARENT_NAME,
+    FIELD_ACCOUNT_HOLDER_NAME,
+    FIELD_DOB,
+    FIELD_INCOME_CERT_DATE,
+    FIELD_ANNUAL_INCOME,
+    FIELD_IFSC,
+    FIELD_BANK_ACCOUNT_NUMBER,
+    FIELD_AADHAAR_LAST4,
+    TEXTRACT_QUERIES,
+)
+from backend.src.core.normalize import (
+    normalize_name,
+    normalize_date,
+    normalize_money,
+    normalize_ifsc,
+    normalize_account_number,
+    normalize_aadhaar,
+)
+from backend.src.core.masking import mask_aadhaar, mask_account_number
+from backend.src.core.validators import validate_verhoeff
+from backend.src.aws.s3_client import get_authoritative_metadata, DEFAULT_BUCKET
+from backend.src.aws.textract_client import extract_document_sync
+from backend.src.aws.bedrock_client import invoke_bedrock_structured
+from backend.src.aws.ddb import (
+    get_full_packet,
+    update_document_extraction,
+    update_packet_status,
+)
+from backend.src.ai.schemas import get_extraction_output_config
+from backend.src.ai.extract import build_extraction_prompt
+
+logger = logging.getLogger(__name__)
+
+
+def normalize_extracted_value(field_key: str, raw_val: Optional[str]) -> Tuple[Optional[str], Optional[Any], bool]:
+    """Apply domain normalization and PII masking to an extracted field.
+
+    Returns:
+        Tuple of (stored_raw_value, normalized_value, needs_confirmation).
+    """
+    if not raw_val or not str(raw_val).strip():
+        return None, None, False
+
+    clean_raw = str(raw_val).strip()
+    needs_conf = False
+
+    # 1. Name fields
+    if field_key in {FIELD_STUDENT_NAME, FIELD_FATHER_NAME, FIELD_PARENT_NAME, FIELD_ACCOUNT_HOLDER_NAME}:
+        norm, _ = normalize_name(clean_raw)
+        return clean_raw, norm, False
+
+    # 2. Date fields
+    if field_key in {FIELD_DOB, FIELD_INCOME_CERT_DATE}:
+        norm = normalize_date(clean_raw)
+        return clean_raw, norm, (norm is None)
+
+    # 3. Money / Annual Income
+    if field_key == FIELD_ANNUAL_INCOME:
+        norm = normalize_money(clean_raw)
+        return clean_raw, norm, (norm is None)
+
+    # 4. IFSC code
+    if field_key == FIELD_IFSC:
+        norm = normalize_ifsc(clean_raw)
+        return clean_raw, norm, False
+
+    # 5. Bank Account Number (mask PII!)
+    if field_key == FIELD_BANK_ACCOUNT_NUMBER:
+        masked, last4 = mask_account_number(clean_raw)
+        norm = normalize_account_number(clean_raw)
+        # We store masked version to comply with privacy rules
+        return masked or clean_raw, last4, False
+
+    # 6. Aadhaar Number (mask PII + Verhoeff validation)
+    if field_key in {FIELD_AADHAAR_LAST4, "aadhaar_number"}:
+        masked, last4 = mask_aadhaar(clean_raw)
+        norm_digits = normalize_aadhaar(clean_raw)
+        is_verhoeff_valid = validate_verhoeff(norm_digits) if norm_digits and len(norm_digits) == 12 else True
+        return masked or clean_raw, last4, (not is_verhoeff_valid)
+
+    # Default: string cleanup
+    return clean_raw, clean_raw.lower(), False
+
+
+def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
+    """Handle async document extraction."""
+    packet_id = event.get("packetId")
+    document_id = event.get("documentId")
+    role = event.get("role")
+    object_key = event.get("objectKey")
+
+    if not packet_id or not document_id or not role:
+        logger.error("Missing required extraction payload: %s", event)
+        return {"status": "FAILED", "error": "Missing packetId, documentId, or role"}
+
+    try:
+        logger.info("Starting extraction for packet=%s, doc=%s, role=%s", packet_id, document_id, role)
+
+        # 1. Fetch authoritative S3 metadata (never trust client)
+        bucket = event.get("bucketName", DEFAULT_BUCKET)
+        try:
+            auth_meta = get_authoritative_metadata(object_key, bucket_name=bucket)
+            logger.info("Authoritative S3 metadata: %s bytes, type=%s", auth_meta["contentLength"], auth_meta["contentType"])
+        except Exception as s3_err:
+            logger.warning("Could not read S3 head_object: %s. Continuing with default storage.", str(s3_err))
+
+        # 2. Textract extraction
+        textract_res = None
+        try:
+            textract_res = extract_document_sync(
+                bucket_name=bucket,
+                object_key=object_key,
+                role=role,
+            )
+        except Exception as tex_err:
+            logger.warning("Textract analyze_document exception: %s. Proceeding with offline/mock flow.", str(tex_err))
+
+        query_answers = textract_res.get("query_answers", {}) if textract_res else {}
+        form_kvs = textract_res.get("form_kvs", {}) if textract_res else {}
+        raw_lines = textract_res.get("raw_lines", []) if textract_res else []
+        mean_conf = textract_res.get("mean_confidence", 0.95) if textract_res else 0.95
+
+        # 3. Bedrock extraction invocation
+        extracted_fields_list: List[ExtractedField] = []
+        role_confirmed = True
+        doc_quality = DocumentQuality.GOOD if mean_conf >= 0.70 else DocumentQuality.POOR
+        notes = None
+
+        ai_response_text = None
+        try:
+            sys_prompt, user_prompt = build_extraction_prompt(
+                role=role,
+                query_answers=query_answers,
+                form_kvs=form_kvs,
+                raw_lines=raw_lines,
+            )
+            out_config = get_extraction_output_config()
+            ai_response_text = invoke_bedrock_structured(
+                system_prompt=sys_prompt,
+                user_prompt=user_prompt,
+                output_config=out_config,
+                max_tokens=2000,
+            )
+        except Exception as bed_err:
+            logger.warning("Bedrock invocation failed: %s. Engaging deterministic Textract fallback.", str(bed_err))
+
+        # 4. Parse Bedrock response OR use Textract Query Fallback
+        if ai_response_text:
+            try:
+                parsed_ai = json.loads(ai_response_text)
+                role_confirmed = parsed_ai.get("roleConfirmed", True)
+                doc_quality_val = parsed_ai.get("documentQuality", "GOOD")
+                doc_quality = DocumentQuality(doc_quality_val)
+                notes = parsed_ai.get("notes")
+
+                ai_fields = parsed_ai.get("fields", [])
+                for f in ai_fields:
+                    f_key = f.get("fieldKey", "")
+                    raw_val = f.get("rawValue")
+                    conf = float(f.get("confidence", 1.0))
+                    ev = f.get("evidence")
+
+                    stored_raw, norm_val, needs_conf = normalize_extracted_value(f_key, raw_val)
+                    extracted_fields_list.append(
+                        ExtractedField(
+                            fieldKey=f_key,
+                            rawValue=stored_raw,
+                            normalizedValue=norm_val,
+                            confidence=conf,
+                            evidence=ev,
+                            source="BEDROCK_CLAUDE_SONNET",
+                            needsConfirmation=needs_conf,
+                        )
+                    )
+            except Exception as parse_err:
+                logger.warning("Failed parsing Bedrock extraction JSON: %s. Using Textract query fallback.", str(parse_err))
+                ai_response_text = None
+
+        # Fallback: if AI response is None or failed parsing, populate from Textract query answers
+        if not ai_response_text:
+            logger.info("Populating extraction fields from deterministic Textract queries.")
+            role_queries = TEXTRACT_QUERIES.get(role, [])
+            for q in role_queries:
+                q_text = q["Text"]
+                f_key = q.get("Alias", "")
+                raw_val = query_answers.get(q_text)
+
+                if f_key and raw_val:
+                    stored_raw, norm_val, needs_conf = normalize_extracted_value(f_key, raw_val)
+                    extracted_fields_list.append(
+                        ExtractedField(
+                            fieldKey=f_key,
+                            rawValue=stored_raw,
+                            normalizedValue=norm_val,
+                            confidence=mean_conf,
+                            evidence=f"Textract Query: '{q_text}'",
+                            source="TEXTRACT_QUERY",
+                            needsConfirmation=needs_conf,
+                        )
+                    )
+
+        # 5. Build DocumentExtraction payload
+        extraction = DocumentExtraction(
+            roleConfirmed=role_confirmed,
+            documentQuality=doc_quality,
+            fields=extracted_fields_list,
+            notes=notes,
+        )
+
+        # 6. Update DynamoDB DOC# item (AP4)
+        update_document_extraction(
+            packet_id=packet_id,
+            document_id=document_id,
+            extraction_dict=extraction.model_dump(),
+            status=DocumentStatus.EXTRACTED,
+        )
+
+        # 7. Check if packet is now ready to check
+        packet = get_full_packet(packet_id)
+        if packet:
+            active_extracted_count = 0
+            for doc in packet.documents:
+                if doc.supersededBy is None and doc.status == DocumentStatus.EXTRACTED:
+                    active_extracted_count += 1
+
+            # If >= 3 documents are extracted and packet is in EXTRACTING status, update to READY_TO_CHECK
+            if active_extracted_count >= 3 and packet.status in (PacketStatus.EXTRACTING, PacketStatus.DRAFT):
+                update_packet_status(packet_id, PacketStatus.READY_TO_CHECK)
+                logger.info("Packet %s has %d active extracted docs. Status -> READY_TO_CHECK.", packet_id, active_extracted_count)
+
+        return {"status": "SUCCESS", "documentId": document_id}
+
+    except Exception as e:
+        logger.exception("Fatal error in extraction worker: %s", str(e))
+        update_document_extraction(
+            packet_id=packet_id,
+            document_id=document_id,
+            extraction_dict={},
+            status=DocumentStatus.EXTRACTION_FAILED,
+            error=str(e)[:200],
+        )
+        return {"status": "FAILED", "error": str(e)}
