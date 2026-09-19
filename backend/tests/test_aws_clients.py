@@ -4,9 +4,9 @@ Tests use mock/offline responses without requiring active AWS credentials.
 """
 
 from decimal import Decimal
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from backend.src.aws.s3_client import generate_presigned_upload_url, get_authoritative_metadata
+from backend.src.aws.s3_client import generate_presigned_upload_url, get_authoritative_metadata, get_s3_client
 from backend.src.aws.textract_client import parse_textract_blocks
 from backend.src.aws.bedrock_client import invoke_bedrock_structured
 from backend.src.aws.ddb import (
@@ -37,6 +37,14 @@ from backend.src.core.models import (
 # =====================================================================
 # S3 Client Tests
 # =====================================================================
+
+
+@patch("backend.src.aws.s3_client.boto3.client")
+def test_s3_client_uses_regional_endpoint(mock_client):
+    """Presigned URLs must not redirect from the global S3 endpoint."""
+    get_s3_client("ap-south-1")
+
+    assert mock_client.call_args.kwargs["endpoint_url"] == "https://s3.ap-south-1.amazonaws.com"
 
 def test_s3_presigned_url_generation():
     """Verify presigned PUT URL generator formats the key and calls S3."""

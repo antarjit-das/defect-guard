@@ -17,10 +17,14 @@ PRESIGNED_URL_EXPIRATION_SECONDS = 300  # 5 minutes
 
 
 def get_s3_client(region_name: str = DEFAULT_REGION):
-    """Factory to get an S3 client with standard retry configuration."""
+    """Create an S3 client that generates non-redirecting regional URLs."""
     return boto3.client(
         "s3",
         region_name=region_name,
+        # A global ``bucket.s3.amazonaws.com`` presigned URL redirects an
+        # ap-south-1 bucket request to its regional endpoint. Redirecting a
+        # SigV4 URL changes its Host header and invalidates the signature.
+        endpoint_url=f"https://s3.{region_name}.amazonaws.com",
         config=Config(retries={"max_attempts": 3, "mode": "standard"}),
     )
 
