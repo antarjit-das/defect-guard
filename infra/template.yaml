@@ -1,0 +1,260 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Defect Guard - Nijut Babu Pre-Submission Document Checker.
+  Serverless Architecture on AWS: DynamoDB Single-Table, S3 Direct Uploads,
+  5 HTTP API Endpoints, and 2 Async Worker Lambdas with Bedrock and Textract integration.
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.14
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        AWS_REGION: !Ref AWS::Region
+        DYNAMODB_TABLE: !Ref DefectGuardTable
+        UPLOADS_BUCKET: !Ref DocumentUploadsBucket
+        BEDROCK_MODEL_ID: 'global.anthropic.claude-sonnet-4-5-20250929-v1:0'
+        EXTRACT_WORKER_FUNCTION: !GetAtt ExtractDocumentFunction.Arn
+        RUN_CHECK_WORKER_FUNCTION: !GetAtt RunCheckFunction.Arn
+        LOG_LEVEL: INFO
+
+Resources:
+  # ===================================================================
+  # 1. DynamoDB Single-Table: DefectGuard (AP1 - AP5)
+  # ===================================================================
+  DefectGuardTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'DefectGuard-${AWS::StackName}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  # ===================================================================
+  # 2. S3 Bucket for Document Uploads
+  # ===================================================================
+  DocumentUploadsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'defect-guard-uploads-${AWS::AccountId}-${AWS::Region}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireUploadsAfter1Day
+            Status: Enabled
+            ExpirationInDays: 1
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+            AllowedOrigins:
+              - '*'
+            MaxAge: 3000
+
+  # ===================================================================
+  # 3. HTTP API Gateway (/v1)
+  # ===================================================================
+  DefectGuardHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Sub 'DefectGuardApi-${AWS::StackName}'
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowHeaders:
+          - '*'
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+
+  # ===================================================================
+  # 4. IAM Execution Roles & Policies
+  # ===================================================================
+  LambdaSharedExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'DefectGuardLambdaRole-${AWS::StackName}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DefectGuardAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource: !GetAtt DefectGuardTable.Arn
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:HeadObject
+                Resource: !Sub '${DocumentUploadsBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt DocumentUploadsBucket.Arn
+              - Effect: Allow
+                Action:
+                  - textract:AnalyzeDocument
+                  - textract:DetectDocumentText
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: '*'
+
+  # ===================================================================
+  # 5. API Lambda Functions
+  # ===================================================================
+  CreatePacketFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend
+      Handler: src.handlers.create_packet.handler
+      Role: !GetAtt LambdaSharedExecutionRole.Arn
+      Events:
+        PostPackets:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DefectGuardHttpApi
+            Path: /v1/packets
+            Method: POST
+
+  CreateUploadUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend
+      Handler: src.handlers.create_upload_url.handler
+      Role: !GetAtt LambdaSharedExecutionRole.Arn
+      Events:
+        PostDocuments:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DefectGuardHttpApi
+            Path: /v1/packets/{packetId}/documents
+            Method: POST
+
+  MarkUploadedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend
+      Handler: src.handlers.mark_uploaded.handler
+      Role: !GetAtt LambdaSharedExecutionRole.Arn
+      Events:
+        PostUploaded:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DefectGuardHttpApi
+            Path: /v1/packets/{packetId}/documents/{documentId}/uploaded
+            Method: POST
+
+  RunCheckApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend
+      Handler: src.handlers.run_check_api.handler
+      Role: !GetAtt LambdaSharedExecutionRole.Arn
+      Events:
+        PostCheck:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DefectGuardHttpApi
+            Path: /v1/packets/{packetId}/check
+            Method: POST
+
+  GetPacketFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend
+      Handler: src.handlers.get_packet.handler
+      Role: !GetAtt LambdaSharedExecutionRole.Arn
+      Events:
+        GetPacket:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DefectGuardHttpApi
+            Path: /v1/packets/{packetId}
+            Method: GET
+
+  # ===================================================================
+  # 6. Async Worker Lambda Functions (Longer Timeout)
+  # ===================================================================
+  ExtractDocumentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'DefectGuard-ExtractDocument-${AWS::StackName}'
+      CodeUri: ../backend
+      Handler: src.handlers.extract_document.handler
+      Timeout: 90
+      MemorySize: 1024
+      Role: !GetAtt LambdaSharedExecutionRole.Arn
+
+  RunCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'DefectGuard-RunCheck-${AWS::StackName}'
+      CodeUri: ../backend
+      Handler: src.handlers.run_check.handler
+      Timeout: 120
+      MemorySize: 1024
+      Role: !GetAtt LambdaSharedExecutionRole.Arn
+
+Outputs:
+  HttpApiUrl:
+    Description: Base URL of the Defect Guard HTTP API Gateway
+    Value: !Sub 'https://${DefectGuardHttpApi}.execute-api.${AWS::Region}.amazonaws.com/v1'
+  DynamoDBTableName:
+    Description: Single-Table DynamoDB Table Name
+    Value: !Ref DefectGuardTable
+  S3BucketName:
+    Description: Uploads S3 Bucket Name
+    Value: !Ref DocumentUploadsBucket
