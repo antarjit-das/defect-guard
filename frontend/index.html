@@ -89,16 +89,18 @@
     <div id="packet-status-badge" class="badge badge-risky">DRAFT</div>
   </header>
 
-  <!-- AWS API Gateway Configuration & Actions -->
+  <!-- Application Action Controls -->
   <div class="control-bar">
-    <label style="font-weight: 600; font-size: 13px;">API Gateway URL:</label>
-    <input type="text" id="api-base-url" class="api-endpoint-input" value="https://api.defectguard.assam.gov.in/v1" placeholder="https://<api-id>.execute-api.ap-south-1.amazonaws.com/v1" />
-    <button id="btn-create-packet" onclick="createNewPacket()">1. Start New Check</button>
+    <div style="font-weight: 600; font-size: 14px; color: #334155; margin-right: 8px;">
+      Scheme: <strong>MMNBA AY 2026-27</strong>
+    </div>
+    <button id="btn-create-packet" onclick="createNewPacket()">1. Start New Check Session</button>
     <button id="btn-run-check" class="secondary" onclick="triggerDefectCheck()" disabled>2. Run Defect Check</button>
     <button id="btn-reset" class="secondary" onclick="resetApp()">Reset</button>
+    <span style="font-size: 12px; color: var(--muted); margin-left: auto;">Cloud Backend: AWS ap-south-1</span>
   </div>
 
-  <div id="log-box" class="status-log">Status: Ready. Click "Start New Check" or enter your API URL to begin.</div>
+  <div id="log-box" class="status-log">Status: Ready. Click "Start New Check Session" to begin.</div>
 
   <div class="grid-2">
     <!-- Document Upload Slots with Real Dropzones -->
@@ -183,6 +185,10 @@
   </div>
 
   <script>
+    // Fixed AWS HTTP API Gateway Base URL
+    // Can be overridden via window.DEFECT_GUARD_API_URL or environment variable in production
+    const DEFAULT_API_BASE_URL = window.DEFECT_GUARD_API_URL || "https://api.defectguard.assam.gov.in/v1";
+
     let activePacketId = null;
     let uploadedDocsCount = 0;
     let pollInterval = null;
@@ -193,7 +199,7 @@
     }
 
     function getApiBase() {
-      return document.getElementById('api-base-url').value.trim().replace(/\/+$/, '');
+      return DEFAULT_API_BASE_URL.replace(/\/+$/, '');
     }
 
     // --- 1. POST /packets ---
