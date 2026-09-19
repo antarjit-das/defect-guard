@@ -21,15 +21,15 @@ import uuid
 import logging
 from typing import Dict, Any
 
-from backend.src.core.models import DocumentRole, DocumentItem, DocumentStatus
-from backend.src.core.validators import (
+from ..core.models import DocumentRole, DocumentItem, DocumentStatus
+from ..core.validators import (
     validate_upload_constraints,
     ALLOWED_MIME_TYPES,
     MAX_FILE_BYTES,
 )
-from backend.src.aws.ddb import get_packet_meta, get_full_packet, register_document
-from backend.src.aws.s3_client import generate_presigned_upload_url
-from backend.src.handlers.api_util import api_response, api_error, parse_request_body
+from ..aws.ddb import get_packet_meta, get_full_packet, register_document
+from ..aws.s3_client import generate_presigned_upload_url
+from .api_util import api_response, api_error, parse_request_body
 
 logger = logging.getLogger(__name__)
 

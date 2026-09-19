@@ -1,0 +1,124 @@
+{
+  "scheme": {
+    "schemeId": "NIJUT_BABU_2026",
+    "name": "Mukhya Mantrir Nijut Babu Aasoni (AY 2026-27)",
+    "jurisdiction": "Assam",
+    "incomeCeiling": 400000,
+    "mandatoryRoles": [
+      "AADHAAR",
+      "INCOME_CERTIFICATE",
+      "MARKSHEET",
+      "BANK_PROOF"
+    ]
+  },
+  "student": {
+    "canonicalName": "ANTARJIT DAS",
+    "fatherName": "PRODIP DAS",
+    "gender": "Male",
+    "dob": "2004-03-12"
+  },
+  "documents": [
+    {
+      "role": "AADHAAR",
+      "fileName": "Aadhar.pdf",
+      "fileSizeBytes": 142331,
+      "contentType": "application/pdf",
+      "keyFields": {
+        "student_name": "ANTARJIT DAS",
+        "gender": "Male",
+        "dob": "2004-03-12",
+        "aadhaar_last4": "4821"
+      }
+    },
+    {
+      "role": "MARKSHEET",
+      "fileName": "HS Marksheet.pdf",
+      "fileSizeBytes": 104929,
+      "contentType": "application/pdf",
+      "keyFields": {
+        "student_name": "ANTARJEET DASS",
+        "father_name": "PRODIP DAS",
+        "institution_name": "Cotton University",
+        "board_or_university": "Gauhati University"
+      }
+    },
+    {
+      "role": "INCOME_CERTIFICATE",
+      "fileName": "Income 450k.pdf",
+      "fileSizeBytes": 133444,
+      "contentType": "application/pdf",
+      "status": "DEFECTIVE",
+      "keyFields": {
+        "parent_name": "PRODIP DAS",
+        "annual_income": 450000,
+        "income_cert_authority": "Circle Officer, Dispur Revenue Circle"
+      }
+    },
+    {
+      "role": "INCOME_CERTIFICATE",
+      "fileName": "Income 250k.pdf",
+      "fileSizeBytes": 133453,
+      "contentType": "application/pdf",
+      "status": "COMPLIANT_REPLACEMENT",
+      "keyFields": {
+        "parent_name": "PRODIP DAS",
+        "annual_income": 250000,
+        "income_cert_authority": "Circle Officer, Dispur Revenue Circle"
+      }
+    },
+    {
+      "role": "BANK_PROOF",
+      "fileName": "Bank Statement.pdf",
+      "fileSizeBytes": 97454,
+      "contentType": "application/pdf",
+      "keyFields": {
+        "account_holder_name": "ANTARJIT DAS",
+        "bank_account_number": "XXXXXX9821",
+        "ifsc": "SBIN0001234"
+      }
+    }
+  ],
+  "expectedInitialVerdict": {
+    "score": 40,
+    "band": "NOT_READY",
+    "scoreArithmetic": "100 - 25x2 red - 10x1 amber = 40",
+    "findings": [
+      {
+        "ruleId": "R-01",
+        "severity": "RED",
+        "title": "Student name mismatch across documents"
+      },
+      {
+        "ruleId": "R-07",
+        "severity": "RED",
+        "title": "Declared annual income exceeds scheme ceiling"
+      },
+      {
+        "ruleId": "R-04",
+        "severity": "AMBER",
+        "title": "Institution enrollment requires verification"
+      }
+    ]
+  },
+  "expectedRecheckVerdict": {
+    "score": 65,
+    "band": "RISKY",
+    "scoreArithmetic": "100 - 25x1 red - 10x1 amber = 65",
+    "previousScore": 40,
+    "clearedFindings": [
+      "R-07"
+    ],
+    "remainingFindings": [
+      {
+        "ruleId": "R-01",
+        "severity": "RED",
+        "title": "Student name mismatch across documents"
+      },
+      {
+        "ruleId": "R-04",
+        "severity": "AMBER",
+        "title": "Institution enrollment requires verification"
+      }
+    ]
+  }
+}

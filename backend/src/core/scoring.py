@@ -7,7 +7,7 @@ Zero external AWS/boto3 imports. LLM never calculates or alters the score.
 
 from typing import List, Tuple
 
-from backend.src.core.models import Finding, Severity, VerdictBand
+from .models import Finding, Severity, VerdictBand
 
 
 def compute_readiness_score(findings: List[Finding]) -> Tuple[int, VerdictBand, str]:

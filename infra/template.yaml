@@ -5,6 +5,12 @@ Description: >
   Serverless Architecture on AWS: DynamoDB Single-Table, S3 Direct Uploads,
   5 HTTP API Endpoints, and 2 Async Worker Lambdas with Bedrock and Textract integration.
 
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: http://localhost:8000
+    Description: Browser origin allowed to call the HTTP API and upload directly to S3.
+
 Globals:
   Function:
     Timeout: 30
@@ -75,7 +81,7 @@ Resources:
               - GET
               - PUT
             AllowedOrigins:
-              - '*'
+              - !Ref AllowedOrigin
             MaxAge: 3000
 
   # ===================================================================
@@ -87,7 +93,7 @@ Resources:
       Name: !Sub 'DefectGuardApi-${AWS::StackName}'
       CorsConfiguration:
         AllowOrigins:
-          - '*'
+          - !Ref AllowedOrigin
         AllowHeaders:
           - '*'
         AllowMethods:

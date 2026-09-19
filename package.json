@@ -1,0 +1,22 @@
+{
+  "name": "defect-guard",
+  "version": "1.0.0",
+  "description": "Defect Guard — Nijut Babu Pre-Submission Document Checker with Deterministic Demo Mock Mode",
+  "private": true,
+  "scripts": {
+    "test": "node scripts/verify_mock.js",
+    "test:backend": "python -m pytest",
+    "test:fixtures": "python -m pytest backend/tests/test_fixtures.py",
+    "build": "node -c frontend/config.js frontend/lib/types.js frontend/lib/mock-data.js frontend/lib/mock.js frontend/lib/api.js scripts/verify_mock.js",
+    "serve": "python -m http.server 3000 --directory frontend"
+  },
+  "keywords": [
+    "defect-guard",
+    "mmnba",
+    "mock-mode",
+    "pre-submission-checker",
+    "document-verification"
+  ],
+  "author": "Antarjit Das",
+  "license": "MIT"
+}

@@ -9,7 +9,9 @@ confirm_changeset = true
 capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 image_repositories = []
 resolve_s3 = true
-disable_rollback = true
+disable_rollback = false
+# Deploy only SAM's build output. Deploying infra/template.yaml directly uploads
+# source code without Python dependencies installed from backend/requirements.txt.
 template_file = ".aws-sam/build/template.yaml"
 
 [default.global.parameters]

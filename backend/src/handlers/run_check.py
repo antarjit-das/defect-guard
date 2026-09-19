@@ -26,21 +26,21 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, List
 
-from backend.src.core.models import (
+from ..core.models import (
     Verdict,
     AIStatus,
     PacketStatus,
     DocumentStatus,
     is_usable_extraction,
 )
-from backend.src.core.snapshot import build_snapshot
-from backend.src.core.rules.engine import RuleEngine
-from backend.src.core.scoring import compute_readiness_score
-from backend.src.ai.adjudicate import build_adjudication_prompt
-from backend.src.ai.schemas import get_adjudication_output_config
-from backend.src.ai.validation import apply_all_guardrails
-from backend.src.aws.bedrock_client import invoke_bedrock_structured, DEFAULT_MODEL_ID
-from backend.src.aws.ddb import (
+from ..core.snapshot import build_snapshot
+from ..core.rules.engine import RuleEngine
+from ..core.scoring import compute_readiness_score
+from ..ai.adjudicate import build_adjudication_prompt
+from ..ai.schemas import get_adjudication_output_config
+from ..ai.validation import apply_all_guardrails
+from ..aws.bedrock_client import invoke_bedrock_structured, DEFAULT_MODEL_ID
+from ..aws.ddb import (
     get_full_packet,
     save_verdict,
     update_packet_status,
