@@ -127,12 +127,13 @@ def get_extraction_output_config() -> Dict[str, Any]:
     """Return the outputConfig structure required by the Bedrock Converse API for extraction."""
     return {
         "textFormat": {
+            "type": "json_schema",
             "structure": {
                 "jsonSchema": {
                     "name": "DocumentExtraction",
                     "schema": json.dumps(EXTRACTION_SCHEMA_DICT),
                 }
-            }
+            },
         }
     }
 
@@ -141,11 +142,12 @@ def get_adjudication_output_config() -> Dict[str, Any]:
     """Return the outputConfig structure required by the Bedrock Converse API for adjudication."""
     return {
         "textFormat": {
+            "type": "json_schema",
             "structure": {
                 "jsonSchema": {
                     "name": "FindingAdjudication",
                     "schema": json.dumps(ADJUDICATION_SCHEMA_DICT),
                 }
-            }
+            },
         }
     }

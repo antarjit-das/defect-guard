@@ -34,6 +34,7 @@ def test_schemas_and_output_configs():
 
     extract_config = get_extraction_output_config()
     assert "textFormat" in extract_config
+    assert extract_config["textFormat"]["type"] == "json_schema"
     json_schema_obj = extract_config["textFormat"]["structure"]["jsonSchema"]
     assert json_schema_obj["name"] == "DocumentExtraction"
     # Verify the schema string is valid JSON
@@ -42,10 +43,67 @@ def test_schemas_and_output_configs():
 
     adjudicate_config = get_adjudication_output_config()
     assert "textFormat" in adjudicate_config
+    assert adjudicate_config["textFormat"]["type"] == "json_schema"
     adj_schema_obj = adjudicate_config["textFormat"]["structure"]["jsonSchema"]
     assert adj_schema_obj["name"] == "FindingAdjudication"
     parsed_adj = json.loads(adj_schema_obj["schema"])
     assert "results" in parsed_adj["properties"]
+
+
+def test_bedrock_converse_request_output_config_contract():
+    """Verify that both extraction and adjudication output configs conform to Bedrock Converse API parameters.
+
+    Catches the exact production regression:
+    botocore.exceptions.ParamValidationError: Missing required parameter in outputConfig.textFormat: "type"
+    """
+    from unittest.mock import MagicMock
+    import boto3
+    from botocore.exceptions import ParamValidationError
+
+    client = boto3.client("bedrock-runtime", region_name="ap-south-1")
+    # Mock endpoint to intercept actual network dispatch after parameter validation
+    client._endpoint.make_request = MagicMock(
+        return_value=(MagicMock(status_code=200), {"output": {"message": {"content": [{"text": "{}"}]}}})
+    )
+
+    # 1. Negative test: configuration without "type" MUST raise ParamValidationError
+    invalid_config = {
+        "textFormat": {
+            "structure": {
+                "jsonSchema": {
+                    "name": "InvalidConfig",
+                    "schema": "{}",
+                }
+            }
+        }
+    }
+    try:
+        client.converse(
+            modelId="test-model",
+            messages=[{"role": "user", "content": [{"text": "hello"}]}],
+            outputConfig=invalid_config,
+        )
+        assert False, "Expected ParamValidationError when 'type' is missing in outputConfig.textFormat"
+    except ParamValidationError as e:
+        assert 'Missing required parameter in outputConfig.textFormat: "type"' in str(e)
+
+    # 2. Positive test: extraction outputConfig validates cleanly with Bedrock Converse
+    extract_config = get_extraction_output_config()
+    res_extract = client.converse(
+        modelId="test-model",
+        messages=[{"role": "user", "content": [{"text": "extract"}]}],
+        outputConfig=extract_config,
+    )
+    assert res_extract is not None
+
+    # 3. Positive test: adjudication outputConfig validates cleanly with Bedrock Converse
+    adjudicate_config = get_adjudication_output_config()
+    res_adj = client.converse(
+        modelId="test-model",
+        messages=[{"role": "user", "content": [{"text": "adjudicate"}]}],
+        outputConfig=adjudicate_config,
+    )
+    assert res_adj is not None
 
 
 def test_build_extraction_prompt():
