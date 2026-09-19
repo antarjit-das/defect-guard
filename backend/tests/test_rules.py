@@ -117,11 +117,12 @@ def test_demo_packet_rule_evaluation():
 
     # R-04 check
     r04 = next(f for f in findings if f.ruleId == "R-04")
-    assert r04.severity == Severity.AMBER
+    assert r04.severity == Severity.RED
+    assert "250,000" in r04.reason
 
 
 def test_document_replacement_clears_defect():
-    """Verify that replacing the income certificate clears R-07."""
+    """Verify that replacing the income certificate with compliant income clears R-04 and R-07."""
     docs = _create_demo_documents()
 
     # Supersede doc-income-1 with a compliant income certificate
@@ -137,7 +138,7 @@ def test_document_replacement_clears_defect():
         extraction=DocumentExtraction(
             fields=[
                 ExtractedField(fieldKey="parent_name", rawValue="PRODIP DAS"),
-                # Compliant income under ₹4.00 Lakh
+                # Compliant income under ₹2.50 Lakh and ₹4.00 Lakh
                 ExtractedField(fieldKey="annual_income", rawValue="₹2,40,000/-"),
                 ExtractedField(fieldKey="income_cert_authority", rawValue="Circle Officer, Dispur"),
             ]
@@ -150,11 +151,68 @@ def test_document_replacement_clears_defect():
     findings = engine.evaluate(snapshot, docs)
 
     rule_ids = [f.ruleId for f in findings]
-    # R-07 is cleared!
+    # R-07 and R-04 are cleared!
     assert "R-07" not in rule_ids
-    # R-01 and R-04 still remain
+    assert "R-04" not in rule_ids
+    # R-01 (name mismatch) still remains
     assert "R-01" in rule_ids
-    assert "R-04" in rule_ids
+
+
+def test_r04_income_ceiling_boundaries():
+    """Verify deterministic R-04 behavior across boundary values and formats:
+    - exactly ₹250,000 (no trigger)
+    - below ₹250,000 (no trigger)
+    - above ₹250,000 (trigger RED)
+    - formatted currency strings
+    - missing annual income (no trigger)
+    """
+    engine = RuleEngine()
+
+    def evaluate_income(val):
+        doc = DocumentItem(
+            documentId="doc-inc",
+            role=DocumentRole.INCOME_CERTIFICATE,
+            fileName="inc.pdf",
+            contentType="application/pdf",
+            sizeBytes=100000,
+            status=DocumentStatus.EXTRACTED,
+            extraction=DocumentExtraction(
+                fields=[ExtractedField(fieldKey="annual_income", rawValue=val)] if val is not None else []
+            ),
+        )
+        snap = build_snapshot([doc])
+        res = engine.evaluate(snap, [doc])
+        return [f for f in res if f.ruleId == "R-04"]
+
+    # 1. Exactly 250,000 -> must NOT trigger
+    assert len(evaluate_income("250000")) == 0
+    assert len(evaluate_income("₹250,000")) == 0
+    assert len(evaluate_income("250,000")) == 0
+    assert len(evaluate_income("₹ 250000")) == 0
+    assert len(evaluate_income("2.5 Lakh")) == 0
+
+    # 2. Below 250,000 -> must NOT trigger
+    assert len(evaluate_income("249999")) == 0
+    assert len(evaluate_income("₹2,40,000/-")) == 0
+    assert len(evaluate_income("150000")) == 0
+
+    # 3. Above 250,000 -> MUST trigger with Severity.RED
+    r04_250001 = evaluate_income("250001")
+    assert len(r04_250001) == 1
+    assert r04_250001[0].severity == Severity.RED
+    assert "250,000" in r04_250001[0].reason
+
+    r04_formatted = evaluate_income("₹2,50,001/-")
+    assert len(r04_formatted) == 1
+    assert r04_formatted[0].severity == Severity.RED
+
+    r04_450k = evaluate_income("₹4,50,000/-")
+    assert len(r04_450k) == 1
+    assert r04_450k[0].severity == Severity.RED
+
+    # 4. Missing annual income -> must NOT trigger
+    assert len(evaluate_income(None)) == 0
+    assert len(evaluate_income("")) == 0
 
 
 def test_rule_gender_check():

@@ -213,14 +213,21 @@ class RuleEngine:
                     confidence=0.99,
                 )
 
-        # --- Rule R-04: Institution enrollment requires verification (AMBER) ---
-        inst_row = rows_by_field.get(FIELD_INSTITUTION_NAME)
-        if inst_row and inst_row.canonicalValue:
-            add_finding(
-                "R-04",
-                [DocumentReference(role=DocumentRole(inst_row.canonicalSource or ROLE_MARKSHEET), value=inst_row.canonicalValue)],
-                confidence=0.85,
-            )
+        # --- Rule R-04: Declared annual income exceeds the scheme ceiling (RED) ---
+        income_row = rows_by_field.get(FIELD_ANNUAL_INCOME)
+        r04_ceiling = 250_000
+        if income_row and income_row.canonicalValue:
+            income_num = normalize_money(income_row.canonicalValue)
+            if income_num is not None and income_num > r04_ceiling:
+                add_finding(
+                    "R-04",
+                    [DocumentReference(role=DocumentRole(income_row.canonicalSource or ROLE_INCOME_CERTIFICATE), value=income_row.canonicalValue)],
+                    custom_reason=(
+                        f"Your income certificate shows an annual family income of ₹{income_num:,}, "
+                        f"which is above this scheme's ceiling of ₹{r04_ceiling:,}."
+                    ),
+                    confidence=0.99,
+                )
 
         # --- Rule R-08: Income certificate issuing authority requires verification (AMBER) ---
         auth_row = rows_by_field.get(FIELD_INCOME_CERT_AUTHORITY)
