@@ -14,7 +14,6 @@ Globals:
       - x86_64
     Environment:
       Variables:
-        AWS_REGION: !Ref AWS::Region
         DYNAMODB_TABLE: !Ref DefectGuardTable
         UPLOADS_BUCKET: !Ref DocumentUploadsBucket
         BEDROCK_MODEL_ID: 'global.anthropic.claude-sonnet-4-5-20250929-v1:0'
