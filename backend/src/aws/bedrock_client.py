@@ -1,7 +1,7 @@
 """Amazon Bedrock Runtime thin client for Defect Guard.
 
 Uses the Bedrock Converse API with structured outputs (`outputConfig.textFormat`)
-and Amazon Nova Pro (`apac.amazon.nova-pro-v1:0`).
+and Amazon Nova 2 Lite (`global.amazon.nova-2-lite-v1:0`).
 Handles retries, exponential backoff for throttling, and gracefully returns raw text
 or fallback indicators.
 """
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_REGION = os.environ.get("AWS_REGION", "ap-south-1")
 DEFAULT_MODEL_ID = os.environ.get(
     "BEDROCK_MODEL_ID",
-    "apac.amazon.nova-pro-v1:0",
+    "global.amazon.nova-2-lite-v1:0",
 )
 
 
