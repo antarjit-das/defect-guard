@@ -5,6 +5,8 @@ Emits typed Finding objects with stable IDs and tags candidates for AI adjudicat
 Zero external AWS/boto3 imports.
 """
 
+'''i need to understand the code here better bruh, the caveat is just that im too shit in Python OOPS so far'''
+
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import yaml
@@ -46,7 +48,7 @@ class RuleEngine:
     """Evaluates scholarship packets against YAML-defined scheme rules."""
 
     def __init__(self, ruleset_path: Optional[Path] = None):
-        self.ruleset_path = ruleset_path or DEFAULT_RULESET_PATH
+        self.ruleset_path = ruleset_path or DEFAULT_RULESET_PATH   # ruleset_path has been added as extra var, cuz in future we may do tests on how this engine would behave with another ruleset or with a corrupt yaml. so we dont need to continuously overwrite the default_ruleset_path everytime
         with open(self.ruleset_path, "r", encoding="utf-8") as f:
             self.ruleset = yaml.safe_load(f)
 
