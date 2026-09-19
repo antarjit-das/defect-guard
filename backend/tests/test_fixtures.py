@@ -86,3 +86,43 @@ def test_packet_extracting_fixture():
     statuses = [doc.status for doc in packet.documents]
     assert DocumentStatus.EXTRACTING in statuses
     assert DocumentStatus.UPLOADED in statuses
+
+
+def test_packet_rechecked_fixture():
+    """Verify that packet_rechecked.json passes full Pydantic model validation."""
+    fixture_path = FIXTURES_DIR / "packet_rechecked.json"
+    assert fixture_path.exists(), f"Fixture not found at {fixture_path}"
+
+    with open(fixture_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    packet = Packet.model_validate(data)
+
+    assert packet.packetId == "pkt-demo-2026-0918"
+    assert packet.status == PacketStatus.CHECKED
+    assert packet.schemeId == "NIJUT_BABU_2026"
+    assert len(packet.documents) == 5  # 4 original + 1 replacement (superseding doc-income-1)
+
+    # Verify supersededBy linkage
+    doc_income_1 = next(d for d in packet.documents if d.documentId == "doc-income-1")
+    assert doc_income_1.supersededBy == "doc-income-2"
+
+    doc_income_2 = next(d for d in packet.documents if d.documentId == "doc-income-2")
+    assert doc_income_2.supersededBy is None
+    assert doc_income_2.status == DocumentStatus.EXTRACTED
+
+    # Verdict & Score checks
+    verdict = packet.verdict
+    assert verdict is not None
+    assert verdict.score == 65
+    assert verdict.band == VerdictBand.RISKY
+    assert verdict.scoreArithmetic == "100 - 25x1 red - 10x1 amber = 65"
+    assert packet.previousScore == 40
+
+    # Verify R-07 is cleared, only R-01 and R-04 remain
+    assert len(verdict.findings) == 2
+    rule_ids = [f.ruleId for f in verdict.findings]
+    assert "R-07" not in rule_ids
+    assert "R-01" in rule_ids
+    assert "R-04" in rule_ids
+
