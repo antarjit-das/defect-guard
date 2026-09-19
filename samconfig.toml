@@ -10,7 +10,7 @@ capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 image_repositories = []
 resolve_s3 = true
 disable_rollback = true
-template_file = "infra/template.yaml"
+template_file = ".aws-sam/build/template.yaml"
 
 [default.global.parameters]
 region = "ap-south-1"
