@@ -23,7 +23,7 @@ import logging
 from typing import Dict, Any
 import boto3
 
-from backend.src.core.models import PacketStatus, DocumentStatus
+from backend.src.core.models import PacketStatus, DocumentStatus, is_usable_extraction
 from backend.src.aws.ddb import get_full_packet, update_packet_status
 from backend.src.handlers.api_util import api_response, api_error
 
@@ -60,6 +60,8 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
         extracted_roles = set()
         for doc in packet.documents:
             if doc.supersededBy is None and doc.status == DocumentStatus.EXTRACTED:
+                if doc.extraction is not None and not is_usable_extraction(doc.extraction):
+                    continue
                 role = doc.role.value if hasattr(doc.role, "value") else str(doc.role)
                 extracted_roles.add(role)
 

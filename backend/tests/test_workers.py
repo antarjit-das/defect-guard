@@ -242,10 +242,10 @@ def test_run_check_worker_success(mock_save_verdict, mock_bedrock, mock_get_full
     mock_save_verdict.assert_called_once()
     verdict: Verdict = mock_save_verdict.call_args[0][1]
 
-    # Rule R-01 downgraded to AMBER (10 pts) + R-04 institution (10 pts) = 100 - 20 = 80 (RISKY)
-    assert verdict.score == 80
-    assert verdict.band.value == "RISKY"
-    assert "10x2 amber = 80" in verdict.scoreArithmetic
+    # Rule R-01 downgraded to AMBER (10 pts), R-04 not triggered for 250,000 ceiling = 100 - 10 = 90 (READY)
+    assert verdict.score == 90
+    assert verdict.band.value == "READY"
+    assert "10x1 amber = 90" in verdict.scoreArithmetic
     assert verdict.aiStatus == AIStatus.OK
 
 
@@ -280,7 +280,11 @@ def test_run_check_worker_template_fallback(mock_save_verdict, mock_bedrock, moc
         DocumentItem(
             documentId="d3", role=DocumentRole.INCOME_CERTIFICATE, fileName="income.pdf", contentType="application/pdf", sizeBytes=1000,
             status=DocumentStatus.EXTRACTED,
-            extraction=DocumentExtraction(fields=[]),
+            extraction=DocumentExtraction(
+                fields=[
+                    ExtractedField(fieldKey="annual_income", rawValue="2,00,000", normalizedValue=200000),
+                ]
+            ),
         ),
     ]
 

@@ -31,6 +31,7 @@ from backend.src.core.models import (
     AIStatus,
     PacketStatus,
     DocumentStatus,
+    is_usable_extraction,
 )
 from backend.src.core.snapshot import build_snapshot
 from backend.src.core.rules.engine import RuleEngine
@@ -71,6 +72,25 @@ def handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
         for doc in packet.documents:
             if doc.supersededBy is None:
                 active_docs.append(doc)
+
+        # Minimum extracted documents guard: require at least 3 usable extracted documents
+        active_extracted_docs = [
+            doc for doc in active_docs
+            if doc.status == DocumentStatus.EXTRACTED
+            and doc.extraction is not None
+            and is_usable_extraction(doc.extraction)
+        ]
+        if len(active_extracted_docs) < 3:
+            err_msg = (
+                f"Cannot run check: at least 3 usable extracted documents are required "
+                f"(found {len(active_extracted_docs)})."
+            )
+            logger.warning("Packet %s check rejected: %s", packet_id, err_msg)
+            return {
+                "status": "FAILED",
+                "packetId": packet_id,
+                "error": err_msg,
+            }
 
         # 3. Build Application Snapshot
         snapshot = build_snapshot(active_docs)
