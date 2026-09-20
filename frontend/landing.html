@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <meta content="web_standard" name="shell-type">
+  <title>Defect Guard — Institutional Statutory Review &amp; Document Forensics</title>
+  <style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+      main > :first-child { margin-top: 0 !important; }
+      main > :last-child { margin-bottom: 0 !important; }
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "outline": "#7a776f",
+            "surface-container-lowest": "#ffffff",
+            "surface-tint": "#605e5b",
+            "success-bg": "#F1F8F3",
+            "on-error": "#ffffff",
+            "on-primary-fixed-variant": "#484644",
+            "warning-border": "#E8D29E",
+            "info-bg": "#F3F6F9",
+            "secondary": "#2850ce",
+            "secondary-fixed-dim": "#b7c4ff",
+            "surface-dim": "#dbdad7",
+            "surface-container-low": "#f4f3f1",
+            "danger-text": "#9F2F2F",
+            "surface-variant": "#e3e2e0",
+            "primary-fixed-dim": "#cac6c2",
+            "success-text": "#276749",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed-variant": "#4a4640",
+            "primary-fixed": "#e6e2de",
+            "inverse-primary": "#cac6c2",
+            "success-border": "#BFD9C5",
+            "on-background": "#1a1c1a",
+            "primary": "#000000",
+            "on-primary": "#ffffff",
+            "info-border": "#D3DCE5",
+            "on-tertiary-container": "#88837c",
+            "text-tertiary": "#96918A",
+            "on-primary-container": "#868380",
+            "surface": "#FFFFFF",
+            "secondary-container": "#476ae8",
+            "outline-variant": "#cbc6bd",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed": "#001452",
+            "warning-text": "#8A5A14",
+            "on-secondary": "#ffffff",
+            "warning-bg": "#FFF8E8",
+            "inverse-surface": "#2f312f",
+            "on-surface": "#1a1c1a",
+            "surface-container-high": "#e9e8e5",
+            "tertiary-container": "#1e1b16",
+            "tertiary-fixed-dim": "#cbc6bd",
+            "danger-border": "#E7B8B2",
+            "border": "#E6E2DB",
+            "surface-container-highest": "#e3e2e0",
+            "primary-container": "#1c1b19",
+            "background": "#faf9f6",
+            "on-error-container": "#93000a",
+            "tertiary-fixed": "#e8e2d9",
+            "danger-bg": "#FFF3F1",
+            "on-secondary-container": "#fffbff",
+            "surface-container": "#efeeeb",
+            "info-text": "#4B5E72",
+            "inverse-on-surface": "#f1f1ee",
+            "on-tertiary-fixed": "#1e1b16",
+            "tertiary": "#000000",
+            "surface-bright": "#faf9f6",
+            "border-subtle": "#EEECE7",
+            "error-container": "#ffdad6",
+            "secondary-fixed": "#dde1ff",
+            "on-primary-fixed": "#1c1b19",
+            "on-secondary-fixed-variant": "#0038b6",
+            "surface-muted": "#F7F6F2",
+            "on-surface-variant": "#494640"
+          },
+          borderRadius: {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          spacing: {
+            "gutter-mobile": "1rem",
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "margin-mobile": "1rem",
+            "space-xl": "2rem",
+            "margin": "2rem",
+            "gutter": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          fontFamily: {
+            "small-caption": ["Times New Roman", "serif"],
+            "section-heading": ["Times New Roman", "serif"],
+            "body-muted": ["Times New Roman", "serif"],
+            "body-base": ["Times New Roman", "serif"],
+            "metric-readout": ["Times New Roman", "serif"],
+            "display-hero": ["Times New Roman", "serif"],
+            "wordmark": ["Helvetica", "Arial", "sans-serif"],
+            "display-hero-mobile": ["Times New Roman", "serif"],
+            "product-heading-mobile": ["Times New Roman", "serif"],
+            "product-heading": ["Times New Roman", "serif"],
+            "section-heading-mobile": ["Times New Roman", "serif"],
+            "subheading": ["Times New Roman", "serif"]
+          },
+          fontSize: {
+            "small-caption": ["13px", { "lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400" }],
+            "section-heading": ["48px", { "lineHeight": "58px", "letterSpacing": "0", "fontWeight": "400" }],
+            "body-muted": ["15px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400" }],
+            "body-base": ["16px", { "lineHeight": "26px", "letterSpacing": "0", "fontWeight": "400" }],
+            "metric-readout": ["64px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "display-hero": ["72px", { "lineHeight": "82px", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+            "wordmark": ["20px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "700" }],
+            "display-hero-mobile": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+            "product-heading-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "0", "fontWeight": "600" }],
+            "product-heading": ["36px", { "lineHeight": "44px", "letterSpacing": "0", "fontWeight": "600" }],
+            "section-heading-mobile": ["34px", { "lineHeight": "42px", "letterSpacing": "0", "fontWeight": "400" }],
+            "subheading": ["20px", { "lineHeight": "28px", "letterSpacing": "0", "fontWeight": "600" }]
+          }
+        }
+      }
+    };
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+</head>
+<body class="bg-background font-body-base text-on-surface antialiased" id="top">
+
+  <!-- Fixed Navigation Header -->
+  <header class="fixed top-0 w-full z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+    <div class="h-16 max-w-7xl mx-auto px-margin-mobile lg:px-margin flex items-center justify-between">
+      <div class="flex items-center gap-space-md">
+        <img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1XaAdJ8L-iBBsisOZI1vlaUWTZcGFF0PnDSCTC6KkIumgcUiZhjDbgeMGrGmnO3zSqRPdC69Xscbbb4ruBIvW1qZY7cZjgAU6PxeopJNvqs4aGcdEnV7qI-Pu4koxYPLj7lLTutmLX-fUOyFcjszJY-Y9Tx1BtS8J3xYWGnqkRL2oVIeFtVQQmlRrkl55K1z-ujlRRSgNVjxwkF0_6dXkZLVioGCVcyGC_h0LJd-o6oELvsesvBJ1iDTw">
+        <a class="font-wordmark text-wordmark tracking-tight text-on-surface hover:opacity-80 transition-opacity" data-path="overview" href="#top">DEFECT GUARD</a>
+      </div>
+      <nav class="hidden md:flex items-center gap-space-lg" data-active-classes="text-on-surface font-semibold underline underline-offset-8 decoration-1">
+        <a class="font-body-muted text-body-muted text-on-surface-variant hover:text-on-surface transition-colors" data-path="how-it-works" href="#how-it-works">How it works</a>
+        <a class="font-body-muted text-body-muted text-on-surface-variant hover:text-on-surface transition-colors" data-path="verification-criteria" href="#verification-criteria">Verification criteria</a>
+        <a class="font-body-muted text-body-muted text-on-surface-variant hover:text-on-surface transition-colors" data-path="privacy-security" href="#privacy-security">Privacy &amp; Security</a>
+      </nav>
+      <div class="flex items-center gap-space-sm">
+        <a class="inline-flex items-center justify-center h-10 px-space-md bg-primary text-surface font-body-base text-small-caption tracking-wider rounded border border-primary hover:bg-on-surface-variant transition-colors shadow-sm" data-path="audit-workspace" href="index.html?select=1">Start check →</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="w-full pt-16 bg-background min-h-screen">
+    <div class="flex flex-col w-full">
+
+      <!-- 1. Hero Section -->
+      <section class="w-full py-space-xl lg:py-24" id="overview">
+        <div class="max-w-6xl mx-auto px-margin-mobile lg:px-margin flex flex-col items-start">
+          <div class="max-w-4xl space-y-space-md">
+            <h1 class="font-display-hero text-section-heading-mobile lg:text-display-hero text-on-surface tracking-tight leading-none">
+              <span class="block font-subheading text-xl md:text-2xl text-on-surface-variant font-normal tracking-tight mb-space-xs">The Idea is Simple:</span>
+              <span class="block font-display-hero text-section-heading-mobile lg:text-display-hero text-on-surface tracking-tight leading-none">Check your scholarship documents before you submit.</span>
+            </h1>
+            <p class="font-body-base text-body-base text-on-surface-variant max-w-2xl text-lg leading-relaxed pt-space-xs">
+              Upload your documents, compare the critical statutory details, and catch discrepancies before they become irrecoverable portal rejections.
+            </p>
+            <div class="flex flex-wrap items-center gap-space-md pt-space-sm">
+              <a class="inline-flex items-center justify-center h-12 px-space-lg bg-primary text-surface font-body-base text-body-base tracking-wide rounded hover:bg-neutral-800 transition-colors shadow-sm" data-path="audit-workspace" href="index.html?select=1">
+                Start check →
+              </a>
+            </div>
+          </div>
+
+          <!-- Application Snapshot Preview Card -->
+          <div class="w-full mt-space-xl bg-surface rounded-xl p-space-md lg:p-space-lg shadow-sm border border-border">
+            <div class="flex flex-col md:flex-row md:items-center justify-between pb-space-md gap-space-sm">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-space-xs">
+                  <span class="font-wordmark text-small-caption tracking-wider uppercase text-text-tertiary">Inspection Dossier</span>
+                  <span class="text-text-tertiary">/</span>
+                  <h2 class="font-subheading text-subheading text-on-surface">Application Snapshot · Preview</h2>
+                </div>
+                <p class="font-small-caption text-small-caption text-on-surface-variant">5 primary proofs extracted · 3 variance flags detected</p>
+              </div>
+              <div class="flex items-center gap-space-sm">
+                <div class="flex items-baseline gap-1 bg-danger-bg px-space-sm py-1 rounded border border-danger-border">
+                  <span class="font-metric-readout text-xl text-danger-text">40</span>
+                  <span class="font-small-caption text-small-caption text-danger-text font-bold">/ 100</span>
+                  <span class="ml-1.5 font-small-caption text-small-caption text-danger-text uppercase font-bold tracking-widest">RISKY</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Comparative Table Container -->
+            <div class="w-full overflow-x-auto">
+              <table class="w-full text-left font-body-base text-body-muted border-collapse">
+                <thead>
+                  <tr class="bg-surface-muted text-on-surface-variant font-small-caption text-small-caption">
+                    <th class="py-space-sm px-space-sm font-semibold">Statutory Field</th>
+                    <th class="py-space-sm px-space-sm font-semibold">Aadhaar (UIDAI)</th>
+                    <th class="py-space-sm px-space-sm font-semibold">Caste Certificate</th>
+                    <th class="py-space-sm px-space-sm font-semibold">Income Certificate</th>
+                    <th class="py-space-sm px-space-sm font-semibold">Marksheet (10th/12th)</th>
+                    <th class="py-space-sm px-space-sm font-semibold">Bank Passbook</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border-subtle text-on-surface">
+                  <!-- Name Row (Mismatch flagged) -->
+                  <tr class="bg-warning-bg/40">
+                    <td class="py-space-sm px-space-sm font-medium">
+                      <div class="flex items-center gap-1.5">
+                        <span>Full Legal Name</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-warning-bg text-warning-text border border-warning-border">Mismatch</span>
+                      </div>
+                    </td>
+                    <td class="py-space-sm px-space-sm">Rahul Kumar</td>
+                    <td class="py-space-sm px-space-sm">Rahul Kumar</td>
+                    <td class="py-space-sm px-space-sm">Rahul Kumar</td>
+                    <td class="py-space-sm px-space-sm font-semibold text-warning-text bg-warning-bg/70 px-2 py-1 rounded">
+                      Rahul K.
+                      <span class="block text-[11px] font-normal text-warning-text">Abbreviation detected</span>
+                    </td>
+                    <td class="py-space-sm px-space-sm">Rahul Kumar</td>
+                  </tr>
+                  <!-- DOB Row -->
+                  <tr>
+                    <td class="py-space-sm px-space-sm font-medium">Date of Birth</td>
+                    <td class="py-space-sm px-space-sm">14/08/2004</td>
+                    <td class="py-space-sm px-space-sm">14/08/2004</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm">14/08/2004</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                  </tr>
+                  <!-- Annual Income Row (Critical Threshold Flagged) -->
+                  <tr class="bg-danger-bg/40">
+                    <td class="py-space-sm px-space-sm font-medium">
+                      <div class="flex items-center gap-1.5">
+                        <span>Annual Family Income</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-danger-bg text-danger-text border border-danger-border">Exceeds Cap</span>
+                      </div>
+                    </td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm font-semibold text-danger-text bg-danger-bg/70 px-2 py-1 rounded">
+                      ₹2,60,000 / yr
+                      <span class="block text-[11px] font-normal text-danger-text">Scheme Limit: ₹2,50,000</span>
+                    </td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                  </tr>
+                  <!-- Category Row -->
+                  <tr>
+                    <td class="py-space-sm px-space-sm font-medium">Social Category</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm">OBC (Non-Creamy)</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                  </tr>
+                  <!-- Bank Account Row (Masked) -->
+                  <tr>
+                    <td class="py-space-sm px-space-sm font-medium">Bank Account &amp; IFSC</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm text-text-tertiary">N/A</td>
+                    <td class="py-space-sm px-space-sm font-mono text-sm">••••••4821 (SBIN0001429)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="mt-space-md pt-space-sm bg-surface-container-low px-space-md py-space-sm rounded flex flex-col sm:flex-row justify-between items-start sm:items-center gap-space-xs text-small-caption font-small-caption text-text-tertiary">
+              <span>Formula: 100 base score - (25 × 1 Red Defect) - (15 × 1 Amber Defect) - (20 × Format Warning) = 40</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Positioning & Advisory Notice -->
+      <section class="w-full py-space-md bg-surface-muted border-y border-border">
+        <div class="max-w-6xl mx-auto px-margin-mobile lg:px-margin">
+          <div class="bg-surface rounded-lg p-space-md flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md border border-border-subtle">
+            <div class="flex items-start gap-space-md max-w-4xl">
+              <span class="material-symbols-outlined text-secondary text-2xl shrink-0 mt-0.5">policy</span>
+              <div>
+                <h3 class="font-subheading text-small-caption uppercase tracking-wider text-on-surface">Institutional Advisory &amp; Boundary Notice</h3>
+                <p class="font-body-muted text-body-muted text-on-surface-variant pt-0.5">
+                  This is an independent document-readiness check, not an official scholarship portal, statutory endorsement, or approval prediction. Defect Guard operates entirely client-side to preempt avoidable administrative friction. Checks may be subject to inaccuracies, please check all important info yourself.
+                </p>
+              </div>
+            </div>
+            <div class="shrink-0 font-small-caption text-small-caption text-text-tertiary">
+              Ref: ISO/IEC 27001 Stds
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 'Before You Submit' Problem Section -->
+      <section class="w-full py-space-xl lg:py-24">
+        <div class="max-w-6xl mx-auto px-margin-mobile lg:px-margin">
+          <div class="max-w-2xl space-y-space-xs mb-space-xl">
+            <span class="font-small-caption text-small-caption uppercase tracking-widest text-text-tertiary">Root Causes of Portal Rejection</span>
+            <h2 class="font-product-heading text-product-heading-mobile lg:text-product-heading text-on-surface">
+              Small document mistakes can become big submission problems.
+            </h2>
+            <p class="font-body-base text-body-muted text-on-surface-variant">
+              Administrative databases lack human discretionary judgement. When automated parsers detect string variance or formatting flags, applications are systematically archived without human intervention.
+            </p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-space-lg">
+            <!-- Problem Card 1 -->
+            <div class="bg-surface rounded-xl p-space-lg shadow-sm border border-border flex flex-col justify-between">
+              <div class="space-y-space-md">
+                <div class="w-10 h-10 rounded bg-surface-muted flex items-center justify-center text-on-surface font-wordmark text-small-caption border border-border-subtle">
+                  01
+                </div>
+                <h3 class="font-subheading text-subheading text-on-surface">Identity &amp; Name Discrepancies</h3>
+                <p class="font-body-muted text-body-muted text-on-surface-variant">
+                  Subtle spelling variants—such as truncated middle initials, patronymic re-ordering, or spacing discrepancies between Aadhaar and secondary marksheets—frequently trigger algorithmic identity rejections.
+                </p>
+              </div>
+              <div class="mt-space-lg pt-space-md bg-surface-container-low p-space-sm rounded font-small-caption text-small-caption text-text-tertiary">
+                Failure Rate: High · Algorithmic Reject
+              </div>
+            </div>
+            <!-- Problem Card 2 -->
+            <div class="bg-surface rounded-xl p-space-lg shadow-sm border border-border flex flex-col justify-between">
+              <div class="space-y-space-md">
+                <div class="w-10 h-10 rounded bg-surface-muted flex items-center justify-center text-on-surface font-wordmark text-small-caption border border-border-subtle">
+                  02
+                </div>
+                <h3 class="font-subheading text-subheading text-on-surface">Income Threshold Violations</h3>
+                <p class="font-body-muted text-body-muted text-on-surface-variant">
+                  Submitting certificates from an outdated assessment year or presenting gross income exceeding statutory caps (such as the standard ₹2,50,000 threshold) invalidates financial aid qualification immediately.
+                </p>
+              </div>
+              <div class="mt-space-lg pt-space-md bg-surface-container-low p-space-sm rounded font-small-caption text-small-caption text-text-tertiary">
+                Failure Rate: Absolute · Statutory Disqualification
+              </div>
+            </div>
+            <!-- Problem Card 3 -->
+            <div class="bg-surface rounded-xl p-space-lg shadow-sm border border-border flex flex-col justify-between">
+              <div class="space-y-space-md">
+                <div class="w-10 h-10 rounded bg-surface-muted flex items-center justify-center text-on-surface font-wordmark text-small-caption border border-border-subtle">
+                  03
+                </div>
+                <h3 class="font-subheading text-subheading text-on-surface">File &amp; Format Non-Compliance</h3>
+                <p class="font-body-muted text-body-muted text-on-surface-variant">
+                  Illegible seal impressions, unindexed multipage PDF files, and scans exceeding the standard 2048 KB portal limit cause silent upload timeouts or automated gatekeeping validation errors.
+                </p>
+              </div>
+              <div class="mt-space-lg pt-space-md bg-surface-container-low p-space-sm rounded font-small-caption text-small-caption text-text-tertiary">
+                Failure Rate: Moderate · Server Drop / Error 413
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. 'How It Works' Section -->
+      <section class="w-full py-space-xl lg:py-24 bg-surface-muted border-y border-border" id="how-it-works">
+        <div class="max-w-6xl mx-auto px-margin-mobile lg:px-margin">
+          <div class="max-w-2xl space-y-space-xs mb-space-xl">
+            <span class="font-small-caption text-small-caption uppercase tracking-widest text-text-tertiary">Standard Operating Procedure</span>
+            <h2 class="font-product-heading text-product-heading-mobile lg:text-product-heading text-on-surface">
+              Four quiet steps to a submission-ready application.
+            </h2>
+            <p class="font-body-base text-body-muted text-on-surface-variant">
+              No complicated dashboards. Defect Guard implements a linear, deterministic validation sequence designed to replicate institutional scrutiny.
+            </p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-lg">
+            <!-- Step 1 -->
+            <div class="bg-surface p-space-md rounded-xl space-y-space-sm shadow-sm border border-border">
+              <div class="font-wordmark text-small-caption text-text-tertiary uppercase tracking-widest">
+                01 — Upload
+              </div>
+              <h3 class="font-subheading text-subheading text-on-surface">Provide Five Proofs</h3>
+              <p class="font-body-muted text-body-muted text-on-surface-variant">
+                Upload your Aadhaar card, Caste certificate, Income slip, Marksheet, and Bank proof in PDF or JPG format.
+              </p>
+            </div>
+            <!-- Step 2 -->
+            <div class="bg-surface p-space-md rounded-xl space-y-space-sm shadow-sm border border-border">
+              <div class="font-wordmark text-small-caption text-text-tertiary uppercase tracking-widest">
+                02 — Review
+              </div>
+              <h3 class="font-subheading text-subheading text-on-surface">Cross-Extraction</h3>
+              <p class="font-body-muted text-body-muted text-on-surface-variant">
+                The engine reads each document simultaneously, compiling an exact comparative matrix across names, dates, and numbers.
+              </p>
+            </div>
+            <!-- Step 3 -->
+            <div class="bg-surface p-space-md rounded-xl space-y-space-sm shadow-sm border border-border">
+              <div class="font-wordmark text-small-caption text-text-tertiary uppercase tracking-widest">
+                03 — Fix
+              </div>
+              <h3 class="font-subheading text-subheading text-on-surface">Actionable Notice</h3>
+              <p class="font-body-muted text-body-muted text-on-surface-variant">
+                Review concrete findings detailing source discrepancies alongside statutory instructions for resolving them.
+              </p>
+            </div>
+            <!-- Step 4 -->
+            <div class="bg-surface p-space-md rounded-xl space-y-space-sm shadow-sm border border-border">
+              <div class="font-wordmark text-small-caption text-text-tertiary uppercase tracking-widest">
+                04 — Re-check
+              </div>
+              <h3 class="font-subheading text-subheading text-on-surface">Recalculate Score</h3>
+              <p class="font-body-muted text-body-muted text-on-surface-variant">
+                Replace flagged documents to instantly re-evaluate your Readiness Meter from <span class="font-mono text-danger-text font-bold">40</span> to <span class="font-mono text-success-text font-bold">100</span>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Concrete Defect Finding Examples Section -->
+      <section class="w-full py-space-xl lg:py-24" id="verification-criteria">
+        <div class="max-w-6xl mx-auto px-margin-mobile lg:px-margin">
+          <div class="max-w-2xl space-y-space-xs mb-space-xl">
+            <span class="font-small-caption text-small-caption uppercase tracking-widest text-text-tertiary">Forensic Proof</span>
+            <h2 class="font-product-heading text-product-heading-mobile lg:text-product-heading text-on-surface">
+              Evidence-first defect reporting.
+            </h2>
+            <p class="font-body-base text-body-muted text-on-surface-variant">
+              Never guess why a document was flagged. Every defect provides concrete source comparisons and explicit statutory instructions.
+            </p>
+          </div>
+          <div class="space-y-space-lg">
+            <!-- Finding Card 1 (Red Critical) -->
+            <div class="bg-surface rounded-xl p-space-lg shadow-sm border border-border">
+              <div class="flex flex-col md:flex-row md:items-center justify-between pb-space-md gap-space-xs border-b border-border-subtle">
+                <div class="flex items-center gap-space-sm">
+                  <span class="font-mono text-xs uppercase px-2 py-0.5 rounded bg-surface-container font-semibold">[R-01]</span>
+                  <h3 class="font-subheading text-subheading text-on-surface">Name mismatch across primary documents</h3>
+                </div>
+                <div>
+                  <span class="inline-block px-space-sm py-0.5 rounded text-small-caption font-small-caption font-semibold uppercase tracking-wider bg-danger-bg text-danger-text border border-danger-border">
+                    RED · Needs Attention
+                  </span>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-space-lg pt-space-md">
+                <!-- Evidence Block -->
+                <div class="bg-surface-muted p-space-md rounded space-y-space-xs border border-border-subtle">
+                  <span class="font-small-caption text-small-caption uppercase tracking-wider text-text-tertiary block">Extraction Evidence</span>
+                  <div class="space-y-1 text-body-muted font-body-muted">
+                    <div><span class="text-text-tertiary">Aadhaar Card:</span> <span class="font-semibold text-on-surface">"Rahul Kumar"</span></div>
+                    <div><span class="text-text-tertiary">Marksheet (12th):</span> <span class="font-semibold text-danger-text">"Rahul K."</span></div>
+                  </div>
+                </div>
+                <!-- Why This Matters -->
+                <div class="space-y-space-xs">
+                  <span class="font-small-caption text-small-caption uppercase tracking-wider text-text-tertiary block">Statutory Implication</span>
+                  <p class="font-body-muted text-body-muted text-on-surface-variant">
+                    State scholarship portals require exact canonical character matching against Aadhaar UIDAI records. Abbreviated initialisms fail automated deduplication algorithms.
+                  </p>
+                </div>
+                <!-- Remediation Guidance -->
+                <div class="bg-surface-container-low p-space-md rounded space-y-space-xs border border-border-subtle">
+                  <span class="font-small-caption text-small-caption uppercase tracking-wider text-text-tertiary block">Actionable Fix</span>
+                  <p class="font-body-muted text-body-muted text-on-surface">
+                    Submit an affidavit of identity alongside the application, or upload your secondary certificate showing the expanded surname prior to statutory submission.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Finding Card 2 (Amber Warning) -->
+            <div class="bg-surface rounded-xl p-space-lg shadow-sm border border-border">
+              <div class="flex flex-col md:flex-row md:items-center justify-between pb-space-md gap-space-xs border-b border-border-subtle">
+                <div class="flex items-center gap-space-sm">
+                  <span class="font-mono text-xs uppercase px-2 py-0.5 rounded bg-surface-container font-semibold">[R-08]</span>
+                  <h3 class="font-subheading text-subheading text-on-surface">Annual family income exceeds scheme ceiling</h3>
+                </div>
+                <div>
+                  <span class="inline-block px-space-sm py-0.5 rounded text-small-caption font-small-caption font-semibold uppercase tracking-wider bg-warning-bg text-warning-text border border-warning-border">
+                    AMBER · Review
+                  </span>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-space-lg pt-space-md">
+                <!-- Evidence Block -->
+                <div class="bg-surface-muted p-space-md rounded space-y-space-xs border border-border-subtle">
+                  <span class="font-small-caption text-small-caption uppercase tracking-wider text-text-tertiary block">Extraction Evidence</span>
+                  <div class="space-y-1 text-body-muted font-body-muted">
+                    <div><span class="text-text-tertiary">Document Value:</span> <span class="font-semibold text-warning-text">₹2,60,000 / annum</span></div>
+                    <div><span class="text-text-tertiary">Statutory Ceiling:</span> <span class="font-semibold text-on-surface">₹2,50,000 / annum</span></div>
+                  </div>
+                </div>
+                <!-- Why This Matters -->
+                <div class="space-y-space-xs">
+                  <span class="font-small-caption text-small-caption uppercase tracking-wider text-text-tertiary block">Statutory Implication</span>
+                  <p class="font-body-muted text-body-muted text-on-surface-variant">
+                    Applications exceeding the statutory income ceiling are filtered automatically by the verification server before manual scrutiny by the welfare department.
+                  </p>
+                </div>
+                <!-- Remediation Guidance -->
+                <div class="bg-surface-container-low p-space-md rounded space-y-space-xs border border-border-subtle">
+                  <span class="font-small-caption text-small-caption uppercase tracking-wider text-text-tertiary block">Actionable Fix</span>
+                  <p class="font-body-muted text-body-muted text-on-surface">
+                    Verify whether your latest Revenue Department certificate reflects deductions for agricultural losses or if a newer assessment year certificate is available.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Finding Card 3 (Info Check) -->
+            <div class="bg-surface rounded-xl p-space-lg shadow-sm border border-border">
+              <div class="flex flex-col md:flex-row md:items-center justify-between pb-space-md gap-space-xs border-b border-border-subtle">
+                <div class="flex items-center gap-space-sm">
+                  <span class="font-mono text-xs uppercase px-2 py-0.5 rounded bg-surface-container font-semibold">[R-14]</span>
+                  <h3 class="font-subheading text-subheading text-on-surface">Marksheet scan exceeds portal upload limit</h3>
+                </div>
+                <div>
+                  <span class="inline-block px-space-sm py-0.5 rounded text-small-caption font-small-caption font-semibold uppercase tracking-wider bg-info-bg text-info-text border border-info-border">
+                    INFO · Check
+                  </span>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-space-lg pt-space-md">
+                <!-- Evidence Block -->
+                <div class="bg-surface-muted p-space-md rounded space-y-space-xs border border-border-subtle">
+                  <span class="font-small-caption text-small-caption uppercase tracking-wider text-text-tertiary block">Extraction Evidence</span>
+                  <div class="space-y-1 text-body-muted font-body-muted">
+                    <div><span class="text-text-tertiary">Payload Size:</span> <span class="font-semibold text-info-text">2.8 MB (2867 KB)</span></div>
+                    <div><span class="text-text-tertiary">Maximum Allowed:</span> <span class="font-semibold text-on-surface">2.0 MB (2048 KB)</span></div>
+                  </div>
+                </div>
+                <!-- Why This Matters -->
+                <div class="space-y-space-xs">
+                  <span class="font-small-caption text-small-caption uppercase tracking-wider text-text-tertiary block">Statutory Implication</span>
+                  <p class="font-body-muted text-body-muted text-on-surface-variant">
+                    Government upload servers reject document attachments larger than 2048 KB, often without displaying an intelligible client-side error code.
+                  </p>
+                </div>
+                <!-- Remediation Guidance -->
+                <div class="bg-surface-container-low p-space-md rounded space-y-space-xs border border-border-subtle">
+                  <span class="font-small-caption text-small-caption uppercase tracking-wider text-text-tertiary block">Actionable Fix</span>
+                  <p class="font-body-muted text-body-muted text-on-surface">
+                    Compress the PDF file to between 300 KB and 1.5 MB using standard PDF optimization, ensuring institutional stamps and signatures remain legible.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Privacy, Security & Masking Section -->
+      <section class="w-full py-space-xl lg:py-24 bg-surface-muted border-t border-border" id="privacy-security">
+        <div class="max-w-6xl mx-auto px-margin-mobile lg:px-margin">
+          <div class="max-w-2xl space-y-space-xs mb-space-xl">
+            <span class="font-small-caption text-small-caption uppercase tracking-widest text-text-tertiary">Custodianship</span>
+            <h2 class="font-product-heading text-product-heading-mobile lg:text-product-heading text-on-surface">
+              Designed for privacy and document dignity.
+            </h2>
+            <p class="font-body-base text-body-muted text-on-surface-variant">
+              We treat sensitive civic identification documents with extreme operational restraint. Your data exists only for the duration of your inspection.
+            </p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+            <!-- Security Pillar 1 -->
+            <div class="bg-surface p-space-lg rounded-xl space-y-space-sm shadow-sm border border-border">
+              <div class="flex items-center gap-space-sm">
+                <span class="material-symbols-outlined text-on-surface text-xl">visibility_off</span>
+                <h3 class="font-subheading text-subheading text-on-surface">Strict Identifier Masking</h3>
+              </div>
+              <p class="font-body-muted text-body-muted text-on-surface-variant">
+                Aadhaar numbers (<code class="font-mono text-xs bg-surface-muted px-1 py-0.5 rounded border border-border-subtle">XXXX XXXX 4821</code>) and bank account numbers (<code class="font-mono text-xs bg-surface-muted px-1 py-0.5 rounded border border-border-subtle">••••••4821</code>) are systematically masked at extraction time prior to memory rendering.
+              </p>
+            </div>
+            <!-- Security Pillar 2 -->
+            <div class="bg-surface p-space-lg rounded-xl space-y-space-sm shadow-sm border border-border">
+              <div class="flex items-center gap-space-sm">
+                <span class="material-symbols-outlined text-on-surface text-xl">timer</span>
+                <h3 class="font-subheading text-subheading text-on-surface">Ephemeral Processing Lifespan</h3>
+              </div>
+              <p class="font-body-muted text-body-muted text-on-surface-variant">
+                Uploaded files and extracted vector representations are held in temporary memory and permanently purged 24 hours after verification completion.
+              </p>
+            </div>
+            <!-- Security Pillar 3 -->
+            <div class="bg-surface p-space-lg rounded-xl space-y-space-sm shadow-sm border border-border">
+              <div class="flex items-center gap-space-sm">
+                <span class="material-symbols-outlined text-on-surface text-xl">cloud_off</span>
+                <h3 class="font-subheading text-subheading text-on-surface">Zero External Transmission</h3>
+              </div>
+              <p class="font-body-muted text-body-muted text-on-surface-variant">
+                Defect Guard does not interface with, submit to, or mirror records with government welfare portals or commercial credit bureaus.
+              </p>
+            </div>
+            <!-- Security Pillar 4 -->
+            <div class="bg-surface p-space-lg rounded-xl space-y-space-sm shadow-sm border border-border">
+              <div class="flex items-center gap-space-sm">
+                <span class="material-symbols-outlined text-on-surface text-xl">science</span>
+                <h3 class="font-subheading text-subheading text-on-surface">Synthetic Demo Baseline</h3>
+              </div>
+              <p class="font-body-muted text-body-muted text-on-surface-variant">
+                All default inspection profiles and preview demonstrations utilize fabricated test fixtures to ensure zero exposure of private citizen data.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Final Call to Action Section -->
+      <section class="w-full py-space-xl lg:py-24 bg-surface border-t border-border">
+        <div class="max-w-4xl mx-auto px-margin-mobile lg:px-margin text-center flex flex-col items-center space-y-space-md">
+          <div class="inline-flex items-center gap-space-xs px-space-sm py-0.5 rounded bg-surface-muted text-text-tertiary font-small-caption text-small-caption uppercase tracking-wider border border-border-subtle">
+            <span>Ready for Examination</span>
+          </div>
+          <h2 class="font-display-hero text-product-heading-mobile lg:text-section-heading text-on-surface tracking-tight">
+            Verify your documents before making your final submission.
+          </h2>
+          <p class="font-body-base text-body-base text-on-surface-variant max-w-xl text-lg">
+            Catch mismatches, format issues, and threshold oversights early. Takes less than two minutes to examine all five documents.
+          </p>
+          <div class="flex flex-wrap items-center justify-center gap-space-md pt-space-sm">
+            <a class="inline-flex items-center justify-center h-12 px-space-lg bg-primary text-surface font-body-base text-body-base tracking-wide rounded hover:bg-neutral-800 transition-colors shadow-sm" data-path="audit-workspace" href="index.html?select=1">
+              Start check →
+            </a>
+          </div>
+          <div class="pt-space-lg text-small-caption font-small-caption text-text-tertiary">
+            Compliant with India National Scholarship Portal (NSP) &amp; State Welfare Directorate formats
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full bg-surface-muted border-t border-border mt-space-xl py-space-xl">
+    <div class="max-w-7xl mx-auto px-margin-mobile lg:px-margin">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-space-lg border-b border-border gap-space-md">
+        <div class="space-y-space-xs">
+          <span class="font-wordmark text-wordmark tracking-tight text-on-surface block">DEFECT GUARD</span>
+          <span class="font-small-caption text-small-caption text-text-tertiary block">Institutional Statutory Review &amp; Document Forensics</span>
+        </div>
+        <nav class="flex flex-wrap items-center gap-space-md text-small-caption text-on-surface-variant">
+          <a class="hover:text-on-surface transition-colors" href="#how-it-works">How it works</a>
+          <a class="hover:text-on-surface transition-colors" href="#verification-criteria">Verification criteria</a>
+          <a class="hover:text-on-surface transition-colors" href="#privacy-security">Privacy &amp; Security</a>
+          <a class="hover:text-on-surface font-semibold transition-colors" href="index.html?select=1">Launch Workspace →</a>
+        </nav>
+      </div>
+      <div class="pt-space-md flex flex-col md:flex-row justify-between items-start md:items-center gap-space-sm font-small-caption text-small-caption text-text-tertiary">
+        <p class="max-w-3xl">Defect Guard is an advisory document-review tool. It does not submit applications or guarantee scholarship approval. Synthetic demo data only.</p>
+        <p>© 2026 Defect Guard. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
