@@ -40,7 +40,7 @@
 * **Visual:** The studio interface opens with 4 document slots.
 * **Action:**
   - Click **"Quick-load Demo Pack"** (or drag and drop `Aadhar.pdf`, `HS Marksheet.pdf`, `Income 450k.pdf`, and `Bank Statement.pdf` into their slots).
-  - Watch the realistic progress bar transition from `Uploading...` $\rightarrow$ `Processing & Extracting...` $\rightarrow$ `✅ Extracted & Verified`.
+  - Watch the realistic progress bar transition from `Uploading...` $\rightarrow$ `Processing & Extracting...` $\rightarrow$ `Extracted & Verified`.
 * **Voiceover:**
   > *"The student uploads the four mandatory documents: Aadhaar card, HS Marksheet, Circle Officer Income Certificate, and Bank Proof. Defect Guard extracts each document independently, validating check digits and normalizing names and dates."*
 
@@ -69,8 +69,8 @@
 
 ### Scene 5: Document Replacement & Re-Check (2:50 - 3:35)
 * **Visual:**
-  - Drag and drop `Income 250k.pdf` onto the Income Certificate slot (or click *"🔄 Replace with Compliant Income Cert"*).
-  - The dropzone turns green: `✅ Income 250k.pdf (Compliant ₹2.50L — Ready for Re-check)`.
+  - Drag and drop `Income 250k.pdf` onto the Income Certificate slot (or click *"Replace with Compliant Income Cert"*).
+  - The dropzone turns green: `Income 250k.pdf (Compliant ₹2.50L — Ready for Re-check)`.
   - The primary action button updates to: **"3. Re-check Application (Updated Documents)"**.
   - Click **"3. Re-check Application"**.
   - Check executes $\rightarrow$ Score dynamically updates from **40 → 65 [RISKY]**!
