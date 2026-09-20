@@ -146,7 +146,8 @@ If Bedrock is offline, throttled, or returns ungrounded output, every finding ge
 ```
 defect-guard/
 ├── frontend/
-│   ├── index.html              # Single-file SPA with dual-mode landing and studio UI
+│   ├── index.html              # Pre-submission checker studio & verification workspace
+│   ├── landing.html            # Institutional product landing page & defect forensics overview
 │   ├── config.js               # Runtime config (API URL, mock toggle, timing constants)
 │   ├── fixtures/               # Pydantic-validated JSON fixtures for mock mode
 │   │   ├── packet_checked.json     # Initial verdict: Score 40, 3 defects
