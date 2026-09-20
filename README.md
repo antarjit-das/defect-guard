@@ -1,16 +1,16 @@
 # Defect Guard
 
-Pre-submission document checker for Indian government scholarship applications, built on AWS serverless + Amazon Bedrock.
+A Pre-submission document checker for Indian government scholarship applications, built on AWS serverless + Amazon Bedrock.
 
-Built for the [First Commit, Bharat Builds Tour](https://wemakedevs.org) (WeMakeDevs x AWS) hackathon, September 17-20, 2026.
+Built with ❤️ for the [First Commit, Bharat Builds Tour](https://wemakedevs.org) (WeMakeDevs x AWS) hackathon, September 17-20, 2026.
 
 ---
 
 ## The problem
 
-Government scholarship applications in India get rejected for clerical reasons more often than for eligibility issues. The verification process is a document-versus-form matching exercise, and students have no way to catch mistakes before they submit.
+Government scholarship applications in India have this one annoying problem of getting rejected for clerical reasons more often than for eligibility issues. The verification process is a document-versus-form matching exercise, and students have no way to catch mistakes before they submit.
 
-A student applying for the [Mukhya Mantrir Nijut Babu Aasoni (MMNBA 2026)](https://highereducation.assam.gov.in) scheme in Assam must upload an Aadhaar card, income certificate, marksheet, and bank proof. If the student's name is spelled `ANTARJIT DAS` on the Aadhaar but `ANTARJEET DASS` on the marksheet, or if the income certificate shows Rs 4,50,000 against the Rs 4,00,000 ceiling, the application comes back weeks later with no specific guidance on what to fix.
+For Example, A student applying for the [Mukhya Mantrir Nijut Babu Aasoni (MMNBA 2026)](https://highereducation.assam.gov.in) scheme in Assam must upload an Aadhaar card, income certificate, marksheet, and bank proof. If the student's name is spelled `ANTARJIT DAS` on the Aadhaar but `ANTARJEET DASS` on the marksheet, or if the income certificate shows Rs 4,50,000 against the Rs 4,00,000 ceiling, the application comes back weeks later, rejected, with no specific guidance on what to fix.
 
 Nobody owns the cross-document view. The portal checks file format, not truth. Nothing compares documents against each other before submission.
 
@@ -18,7 +18,7 @@ Nobody owns the cross-document view. The portal checks file format, not truth. N
 
 ## What we built
 
-Defect Guard checks a student's MMNBA scholarship documents before final portal submission. The student uploads four mandatory documents, and within seconds the system:
+Defect Guard checks a student's scholarship documents before final portal submission. The student uploads four mandatory documents, and within seconds the system:
 
 1. Extracts identity, economic, academic, and bank fields from each document independently using Amazon Textract and Amazon Bedrock
 2. Builds an Application Snapshot, a unified comparison matrix showing what each document actually says, side by side
@@ -29,6 +29,7 @@ Defect Guard checks a student's MMNBA scholarship documents before final portal 
 
 The student can then replace a defective document and re-check instantly, watching findings clear and the score improve in real time.
 
+So far, we have a working mock demo for 1 scheme (the Mukhya Mantrir Nijut Babu Aasoni- MMNBA 2026) supported under our proposition, which is a premier student scholarship scheme by the Government of Assam-India, to support male students under an income and other eligibilities.
 ### Two operating modes
 
 | Mode | Purpose | AWS required? |
@@ -64,9 +65,9 @@ In Demo Mock Mode, the entire flow runs offline using Pydantic-validated fixture
 
 ---
 
-## AWS architecture
+## Proposed AWS architecture
 
-Defect Guard is serverless, deployed in ap-south-1 (Mumbai) using AWS SAM.
+Defect Guard's live AWS model proposition is serverless, deployed in ap-south-1 (Mumbai) using AWS SAM.
 
 | AWS Service | What it does |
 |------------|------|
@@ -341,7 +342,7 @@ The backend is deployed using AWS SAM to ap-south-1:
 
 - No authentication. Any visitor can create packets and upload documents.
 - Single scheme only. Only MMNBA 2026 (Assam) is implemented. The YAML rule system supports multiple schemes, but only one exists today.
-- Live AWS Cloud Mode is deployed but labeled "Build in Progress" on the landing page. Demo Mock Mode is the default.
+- Live AWS Cloud Mode is labeled "Build in Progress" on the landing page. Our team had limited experience for the AWS services that were proposed to be integrated but due to limited practical knowledge, major connectivity technicalities, and time constraints, currently Demo Mock Mode is the default.
 - All sample documents are fictional. The system is designed for real documents but has only been tested with synthetic data.
 - DynamoDB data auto-expires after 24 hours. There is no persistent storage.
 - Aadhaar extraction relies on OCR of physical/scanned documents, not XML or QR cryptographic verification.
@@ -375,16 +376,22 @@ Aadhaar numbers are masked (`XXXXXXXX4821`) at extraction time, before they ente
 
 ---
 
-## Team
+## Meet Team Spark
 
-Antarjit Das (solo)
+Defect Guard was built by Team Spark from the Department of Computer Science and Technology, Bodoland University, Kokrajhar, Assam.
+
+| Member | Focus | Key contributions |
+|--------|-------|-------------------|
+| Antarjit Das | Backend Lead and Documentation | Backend architecture, AWS serverless handlers, deterministic rule engine, AWS service integration, and technical documentation. Joint ideation and demo workflow design. |
+| Mizingsha Mahilary | Frontend Lead and Project Ideation | Frontend leadership, UI/UX workflow planning, interface structure, and overall project coordination. Joint ideation and demo workflow design. |
 
 ### AI coding tools used
 
-As required by hackathon rules, the following AI coding assistants were used during development:
+As required by hackathon rules, the following AI coding tools supported development:
 
-- Google Antigravity (Gemini)
-- Amazon Q Developer
+- Google Antigravity (Gemini): iterative phased development and implementation
+- GPT Codex: debugging assistance and verification planning
+- ChatGPT: initial problem brainstorming and MVP scoping
 
 ---
 
