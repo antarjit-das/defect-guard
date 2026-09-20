@@ -20,6 +20,31 @@ Built with ❤️ for the [First Commit, Bharat Builds Tour](https://wemakedevs.
 
 ---
 
+## 📸 Interface Showcase & Demo Previews
+
+<!-- Place your 3 screenshot files inside the `images/` directory with the filenames referenced below -->
+
+### 1. Institutional Landing Page
+*Statutory overview, MMNBA 2026 scholarship criteria, and verification guidelines.*
+
+![Institutional Landing Page](images/landing-page.png)
+
+---
+
+### 2. Demo vs Live Mode Selection Screen
+*Transparent fork between offline Demo Mock Mode (instant evaluation) and Live AWS Cloud Mode.*
+
+![Mode Selection Screen](images/mode-selector.png)
+
+---
+
+### 3. Interactive Verification Demo Workspace
+*4-slot upload dropzone, cross-document Application Snapshot matrix, 3-column forensic defect report, and deterministic readiness scoring (40 → 50).*
+
+![Verification Demo Workspace](images/demo-page.png)
+
+---
+
 ## The problem
 
 Government scholarship applications in India have this one annoying problem of getting rejected for clerical reasons more often than for eligibility issues. The verification process is a document-versus-form matching exercise, and students have no way to catch mistakes before they submit.
