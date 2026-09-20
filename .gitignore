@@ -1,14 +1,3 @@
-# Hackathon / Planning docs (we will un-ignore them later in the project)
-First_Commit_Master_Hackathon_Info.md
-IMPLEMENTATION.md
-PROJECT.md
-agent_brain.md
-AGENT_BRAIN.md
-agent_implementationplan.md
-AGENT_IMPLEMENTATIONPLAN.md
-update_log.md
-UPDATE_LOG.md
-
 # Un-ignore documentation folder
 !documentation/
 !documentation/**
