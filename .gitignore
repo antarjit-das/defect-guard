@@ -9,6 +9,10 @@ AGENT_IMPLEMENTATIONPLAN.md
 update_log.md
 UPDATE_LOG.md
 
+# Un-ignore documentation folder
+!documentation/
+!documentation/**
+
 
 
 # Operating System Files

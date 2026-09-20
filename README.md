@@ -188,7 +188,7 @@ If Bedrock is offline, throttled, or returns ungrounded output, every finding ge
 
 ## Frontend architecture & editorial design system
 
-The user experience is built around an **institutional editorial design system** inspired by official government gazettes, legal registries, and statutory oversight portals (specified in [`design.md`](design.md)). Rather than adopting generic consumer SaaS patterns, Defect Guard reflects the gravitas, precision, and clarity of state documentation.
+The user experience is built around an **institutional editorial design system** inspired by official government gazettes, legal registries, and statutory oversight portals (specified in [`documentation/design.md`](documentation/design.md)). Rather than adopting generic consumer SaaS patterns, Defect Guard reflects the gravitas, precision, and clarity of state documentation.
 
 ### Core design principles
 
@@ -227,7 +227,10 @@ The user experience is built around an **institutional editorial design system**
 ```
 defect-guard/
 ├── landing.html                # Root entrypoint: Institutional overview & MMNBA 2026 statutory guide
-├── design.md                   # Comprehensive editorial design system & typography guidelines
+├── documentation/              # Core project design & architecture documentation
+│   ├── design.md               # Comprehensive editorial design system & typography guidelines
+│   ├── IMPLEMENTATION.md       # Full backend implementation blueprint & verification plan
+│   └── PROJECT.md              # Project proposal, core story & problem definition
 │
 ├── frontend/
 │   ├── index.html              # Dual-view interface: Mode Selector (?select=1) & Studio Workspace
